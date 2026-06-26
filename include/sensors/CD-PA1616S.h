@@ -8,9 +8,10 @@
 #ifndef INC_CD_PA1616S_H_
 #define INC_CD_PA1616S_H_
 
-#include "stm32h7xx_hal.h"
-
 #define BUFFER_SIZE 128
+
+// Forward declaration
+typedef struct UART_HandleTypeDef UART_HandleTypeDef;
 
 // Data struct for storing GPS info
 typedef struct __attribute__((packed)) {

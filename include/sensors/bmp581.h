@@ -2,9 +2,11 @@
 #define BMP581_H
 
 #include "bmp5_defs.h"
-#include "stm32h7xx_hal.h"
 
 #include <stdint.h>
+
+// Forward declaration
+typedef struct I2C_HandleTypeDef I2C_HandleTypeDef;
 
 #define GRAVITY_ACCEL 9.80665f // m/s^2
 #define AIR_MOLAR_MASS 0.0289644f // kg/mol

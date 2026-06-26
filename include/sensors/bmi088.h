@@ -9,12 +9,13 @@
 #define INC_BMI088_H_
 
 #include "bmi08x.h"
-#include "stm32h7xx_hal.h"
-#include "stm32h743xx.h"
 #include "bmi08_defs.h"
 
 #include <stdint.h>
 #include <math.h>
+
+// Forward declaration
+typedef struct SPI_HandleTypeDef SPI_HandleTypeDef;
 
 #define CONVERT_GYRO_RAW_RANGE(raw, range) ((((float)raw * (float)range) / 32768.0f) * (M_PI / 180.0f))
 

@@ -5,11 +5,12 @@
  *      Author: Dhruv Shah
  */
 
-#include "bmi088.h"
 #include "bmi08_defs.h"
-#include "bmi08.h"
-#include "stm32h7xx_hal.h"
+#include "bmi088.h"
 #include "bmi08x.h"
+#include "bmi08.h"
+
+#include "stm32xxxx_hal.h"
 
 #include <stdint.h>
 #include <math.h>
