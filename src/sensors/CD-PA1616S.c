@@ -13,50 +13,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Global variables
-gps_data_packet_t gps_packet;          // Parsed GPS data
-uint8_t gps_dma_buffer[BUFFER_SIZE];   // DMA reception buffer
-
-extern UART_HandleTypeDef huart8;      // GPS UART handle
-
 // Initialize GPS DMA Reception
-void GPS_Init(void) {
+void gps_init(struct gps_dev *gps, UART_HandleTypeDef *uart) {
+    gps->uart = uart;
+    gps->packet = {0};
+    gps->dma_buffer = {0};
+
     char command[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
-    HAL_UART_Transmit(&huart8, (uint8_t*)command, sizeof(command) - 1, HAL_MAX_DELAY);
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart8, gps_dma_buffer, BUFFER_SIZE);
-}
-
-
-// DMA Callback: Called when GPS Buffer is filled or there is a gap in data transfer between GPS and the Pin
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t offset) {
-    if (huart->Instance == UART8) {
-        // Clear any Overrun error
-        __HAL_UART_CLEAR_OREFLAG(&huart8);
-
-        // Parse the entire DMA buffer (if a GGA sentence is found, store into gps_packet)
-        ParseGPSData((char *)gps_dma_buffer, &gps_packet);
-
-        // Restart DMA reception
-        HAL_UARTEx_ReceiveToIdle_DMA(&huart8, gps_dma_buffer, BUFFER_SIZE);
-    }
-}
-
-
-// UART Error Callback in case error occurs in DMA call back
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-    if (huart->Instance == UART8) {
-        // Clear Overrun
-        __HAL_UART_CLEAR_OREFLAG(&huart8);
-        // Restart DMA
-        HAL_UARTEx_ReceiveToIdle_DMA(&huart8, gps_dma_buffer, BUFFER_SIZE);
-    }
+    HAL_UART_Transmit(uart, (uint8_t*) command, sizeof(command) - 1, HAL_MAX_DELAY);
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, gps->dma_buffer, BUFFER_SIZE);
 }
 
 //  ParseGPSData: Single function to find and parse $GNGGA / $GPGGA
 //    Returns 1 if successful, 0 otherwise
-int ParseGPSData(const char *buffer, gps_data_packet_t *gps_data)
+int gps_parse(struct gps_dev *gps)
 {
     //Search manually for either "$GNGGA" or "$GPGGA" in buffer
+    char buffer = gps->dma_buffer;
     const char *gga_start = NULL;
     for (int i = 0; buffer[i] != '\0'; i++) {
         if (buffer[i] == '$') {
@@ -169,12 +142,12 @@ int ParseGPSData(const char *buffer, gps_data_packet_t *gps_data)
     uint8_t sats = (uint8_t)atoi(fields[7]);
     float alt = (fields[9][0] != '\0') ? atof(fields[9]) : 0.0f;
 
-    // Store in gps_data struct
-    gps_data->latitude_degrees = lat;
-    gps_data->longitude_degrees = lon;
-    gps_data->gpsFixType = fix;
-    gps_data->numSatellites = sats;
-    gps_data->gps_hMSL_m = alt;
+    // Save to packet
+    gps->packet.latitude_degrees = lat;
+    gps->packet.longitude_degrees = lon;
+    gps->packet.gpsFixType = fix;
+    gps->packet.numSatellites = sats;
+    gps->packet.gps_hMSL_m = alt;
 
     return 1;  // Success
 }

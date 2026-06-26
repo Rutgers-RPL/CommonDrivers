@@ -22,19 +22,15 @@ typedef struct __attribute__((packed)) {
     uint8_t gpsFixType;     // 0 = no fix, 1 = fix, 2 = DGPS fix, etc.
 } gps_data_packet_t;
 
-// Global GPS data (updated by DMA callback)
-extern gps_data_packet_t gps_packet;
-// DMA buffer
-extern uint8_t gps_dma_buffer[BUFFER_SIZE];
+struct gps_dev {
+    gps_data_packet_t packet;        // Parsed GPS data
+    uint8_t dma_buffer[BUFFER_SIZE]; // DMA reception buffer
+    UART_HandleTypeDef *uart;        // GPS UART handle
+}
 
 // Initializes GPS DMA
-void GPS_Init(void);
-
-// DMA & Error Callbacks
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t offset);
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
-
+void gps_init(struct gps_dev *gps, UART_HandleTypeDef *uart);
 // Single function to parse GGA data from a buffer
-int ParseGPSData(const char *buffer, gps_data_packet_t *gps_data);
+int gps_parse(struct gps_dev *gps);
 
 #endif /* INC_CD_PA1616S_H_ */
