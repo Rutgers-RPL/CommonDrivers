@@ -5,10 +5,7 @@
 
 #include <stdint.h>
 
-enum flash_name {
-	W25N01KV,
-	GD5F1GQ5XE
-};
+enum flash_name { GD5F1GQ5XE };
 
 struct flash_dev {
 	enum flash_name name;

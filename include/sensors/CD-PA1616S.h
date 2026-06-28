@@ -10,27 +10,14 @@
 
 #define BUFFER_SIZE 128
 
-// Forward declaration
+// Forward declarations
 typedef struct UART_HandleTypeDef UART_HandleTypeDef;
+typedef struct sensor sensor;
 
-// Data struct for storing GPS info
-typedef struct __attribute__((packed)) {
-    float latitude_degrees;
-    float longitude_degrees;
-    float gps_hMSL_m;       // altitude above mean sea level
-    uint8_t numSatellites;
-    uint8_t gpsFixType;     // 0 = no fix, 1 = fix, 2 = DGPS fix, etc.
-} gps_data_packet_t;
-
-struct gps_dev {
-    gps_data_packet_t packet;        // Parsed GPS data
-    uint8_t dma_buffer[BUFFER_SIZE]; // DMA reception buffer
-    UART_HandleTypeDef *uart;        // GPS UART handle
-}
-
-// Initializes GPS DMA
-void gps_init(struct gps_dev *gps, UART_HandleTypeDef *uart);
-// Single function to parse GGA data from a buffer
-int gps_parse(struct gps_dev *gps);
+struct gps_context {
+    uint8_t buffer[BUFFER_SIZE]; // used for DMA reception buffer
+    UART_HandleTypeDef *uart;
+};
+bool gps_init(gps_context *context, struct sensor *sensor);
 
 #endif /* INC_CD_PA1616S_H_ */

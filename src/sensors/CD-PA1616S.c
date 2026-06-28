@@ -6,46 +6,55 @@
  */
 
 #include "CD-PA1616S.h"
+#include "sensor.h"
 
 #include "stm32xxxx_hal.h"
 
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-// Initialize GPS DMA Reception
-void gps_init(struct gps_dev *gps, UART_HandleTypeDef *uart) {
-    gps->uart = uart;
-    gps->packet = {0};
-    gps->dma_buffer = {0};
+bool gps_init(gps_context *context, struct sensor *sensor)
+{
+    assert(context->uart != NULL);
 
+    context->buffer = {0};
+    sensor->context = context;
+    sensor->read = gps_read;
+
+    // Initialize GPS DMA Reception
     char command[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
     HAL_UART_Transmit(uart, (uint8_t*) command, sizeof(command) - 1, HAL_MAX_DELAY);
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, gps->dma_buffer, BUFFER_SIZE);
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, context->buffer, BUFFER_SIZE);
+
+    return true;
 }
 
 //  ParseGPSData: Single function to find and parse $GNGGA / $GPGGA
 //    Returns 1 if successful, 0 otherwise
-int gps_parse(struct gps_dev *gps)
+bool gps_read(struct sensor_context *context, struct packet *packet)
 {
-    //Search manually for either "$GNGGA" or "$GPGGA" in buffer
-    char buffer = gps->dma_buffer;
+    struct gps_context context = (gps_context*) context;
+    char buffer = context->buffer;
+
+    // Search manually for either "$GNGGA" or "$GPGGA" in buffer
     const char *gga_start = NULL;
     for (int i = 0; buffer[i] != '\0'; i++) {
         if (buffer[i] == '$') {
             // Check if we match "$GNGGA" or "$GPGGA"
             if (strncmp(&buffer[i], "$GNGGA", 6) == 0 ||
                 strncmp(&buffer[i], "$GPGGA", 6) == 0)
-            {
-                gga_start = &buffer[i];
-                break;
-            }
+                {
+                    gga_start = &buffer[i];
+                    break;
+                }
         }
     }
 
     // If not found, return failure
     if (!gga_start) {
-        return 0;
+        return false;
     }
 
     //  Copy one line (until CR or LF) into a local buffer
@@ -55,10 +64,10 @@ int gps_parse(struct gps_dev *gps)
            gga_start[idx] != '\r' &&
            gga_start[idx] != '\n' &&
            idx < (int)sizeof(line) - 1)
-    {
-        line[idx] = gga_start[idx];
-        idx++;
-    }
+        {
+            line[idx] = gga_start[idx];
+            idx++;
+        }
     line[idx] = '\0';
 
     // Split into fields by commas. We'll store them in fields[0..].
@@ -104,7 +113,7 @@ int gps_parse(struct gps_dev *gps)
 
     if (fieldIndex < 9) {
         // Not enough fields for a valid GGA
-        return 0;
+        return false;
     }
 
     // Inline conversion to decimal degrees (latitude)
@@ -142,12 +151,10 @@ int gps_parse(struct gps_dev *gps)
     uint8_t sats = (uint8_t)atoi(fields[7]);
     float alt = (fields[9][0] != '\0') ? atof(fields[9]) : 0.0f;
 
-    // Save to packet
-    gps->packet.latitude_degrees = lat;
-    gps->packet.longitude_degrees = lon;
-    gps->packet.gpsFixType = fix;
-    gps->packet.numSatellites = sats;
-    gps->packet.gps_hMSL_m = alt;
-
-    return 1;  // Success
+    packet->latitude_degrees = lat;
+    packet->longitude_degrees = lon;
+    packet->gpsFixType = fix;
+    packet->numSatellites = sats;
+    packet->gps_hMSL_m = alt;
+    return true;
 }

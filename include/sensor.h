@@ -1,27 +1,25 @@
-/*
- * STRUCTS.h
- *
- *  Created on: Feb 25, 2025
- *      Author: mahirshah
- */
+#ifndef SENSOR_H
+#define SENSOR_H
 
-#ifndef INC_STRUCTS_H_
-#define INC_STRUCTS_H_
+#include <stdint.h>
 
+typedef void* sensor_context;
+struct sensor { 
+  void (*read)(sensor_context, packet);
+  sensor_context context;
+};
 
-#include <stdint.h> // Standard integer types for STM32
-
-typedef struct {
+struct packet {
   int16_t magic;                   // 2 bytes
   uint32_t status;                 // 4 bytes
   uint32_t time_us;                // 4 bytes
   float main_voltage_v;            // 4 bytes
   float pyro_voltage_v;            // 4 bytes
   uint8_t numSatellites;           // 1 byte
-  uint8_t gpsFixType;              // 1 byte
+  uint8_t gpsFixType;              // 1 byte    0 = no fix, 1 = fix, 2 = DGPS fix, etc.
   float latitude_degrees;          // 4 bytes
   float longitude_degrees;         // 4 bytes
-  float gps_hMSL_m;                // 4 bytes
+  float gps_hMSL_m;                // 4 bytes   altitude above mean sea level
   float barometer_hMSL_m;          // 4 bytes
   float temperature_c;             // 4 bytes
   float acceleration_x_mss;        // 4 bytes
@@ -41,9 +39,6 @@ typedef struct {
   float y;                         // 4 bytes
   float z;                         // 4 bytes
   uint32_t checksum;               // 4 bytes
-} __attribute__((packed)) ganesha_II_packet;
+} __attribute__((packed)) packet;
 
-
-
-
-#endif /* INC_STRUCTS_H_ */
+#ENDIF // FLASH_H
