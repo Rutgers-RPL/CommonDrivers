@@ -2,23 +2,27 @@
 #define FLASH_H
 
 #include "lfs.h"
+#include "stm32f4xx_hal.h"
 
 #include <stdint.h>
 
-enum flash_name { GD5F1GQ5XE };
+struct flash_ctx {
+	GPIO_TypeDef *port;
+	uint16_t pin;
+	SPI_HandleTypeDef *spi;
+};
 
-struct flash_dev {
-	enum flash_name name;
-	/* struct lfs_config config; */
+struct flash {
+	char *name;
+	struct lfs_config config;
 	lfs_t lfs;
 };
 
-void flash_init(struct flash_dev *dev, enum flash_name name);
-int flash_mount(struct flash_dev *flash, const struct lfs_config *config);
-int flash_unmount(struct flash_dev *flash);
-uint32_t flash_boot_count(struct flash_dev *flash, bool update);
-bool flash_open(struct flash_dev *flash, lfs_file_t *file, const char *filename);
-bool flash_append(struct flash_dev *flash, lfs_file_t *file, const uint8_t *bytes, const size_t size);
-int flash_close(struct flash_dev *flash, lfs_file_t *file);
+int flash_mount(struct flash *flash);
+int flash_unmount(struct flash *flash);
+uint32_t flash_boot_count(struct flash *flash, bool update);
+uint32_t flash_open(struct flash *flash, lfs_file_t *file, const char *filename);
+bool flash_append(struct flash *flash, lfs_file_t *file, const uint8_t *bytes, size_t size);
+int flash_close(struct flash *flash, lfs_file_t *file);
 
 #endif
