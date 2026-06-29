@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 // Flash Sizes 
 #define GD5F_BLOCK_COUNT      1024

@@ -8,16 +8,18 @@
 #ifndef INC_CD_PA1616S_H_
 #define INC_CD_PA1616S_H_
 
+#include "sensor.h"
+#include "stm32f4xx_hal.h"
+
+#include <stdint.h>
+#include <stdbool.h>
+
 #define BUFFER_SIZE 128
 
-// Forward declarations
-typedef struct UART_HandleTypeDef UART_HandleTypeDef;
-typedef struct sensor sensor;
-
-struct gps_context {
+struct gps_ctx {
     uint8_t buffer[BUFFER_SIZE]; // used for DMA reception buffer
     UART_HandleTypeDef *uart;
 };
-bool gps_init(gps_context *context, struct sensor *sensor);
+bool gps_init(struct gps_ctx *ctx, struct sensor *sensor);
 
 #endif /* INC_CD_PA1616S_H_ */

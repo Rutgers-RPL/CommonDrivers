@@ -2,12 +2,7 @@
 #define SENSOR_H
 
 #include <stdint.h>
-
-typedef void* sensor_context;
-struct sensor { 
-  void (*read)(sensor_context, packet);
-  sensor_context context;
-};
+#include <stdbool.h>
 
 struct packet {
   int16_t magic;                   // 2 bytes
@@ -41,4 +36,9 @@ struct packet {
   uint32_t checksum;               // 4 bytes
 } __attribute__((packed)) packet;
 
-#ENDIF // FLASH_H
+struct sensor { 
+  bool (*read)(void*, struct packet*);
+  void* ctx;
+};
+
+#endif // FLASH_H

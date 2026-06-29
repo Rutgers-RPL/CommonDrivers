@@ -10,7 +10,7 @@
 #include "bmi08x.h"
 #include "bmi08.h"
 
-#include "stm32xxxx_hal.h"
+#include "stm32f4xx_hal.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -76,14 +76,14 @@ static void bmi088_delay_us(uint32_t period, void *intf_ptr)
 	HAL_Delay(ceil((double)(period)/(1000.0)));
 }
 
-static float bmi088_convert_accel_axis_data(struct bmi088_contetx context, int16_t axis_data)
+static float bmi088_convert_accel_axis_data(struct bmi088_ctx *ctx, int16_t axis_data)
 {
-	return ((float)axis_data / 32768.0f * 1000 * pow(2, conext->dev.accel_cfg.range + 1) * 1.5) * 0.00981;
+	return ((float)axis_data / 32768.0f * 1000 * pow(2, ctx->dev.accel_cfg.range + 1) * 1.5) * 0.00981;
 }
 
-static float bmi088_convert_gyro_axis_data(struct bmi088_contetx context, int16_t axis_data)
+static float bmi088_convert_gyro_axis_data(struct bmi088_ctx *ctx, int16_t axis_data)
 {
-	switch (conext->dev.gyro_cfg.range) {
+	switch (ctx->dev.gyro_cfg.range) {
 	case BMI08_GYRO_RANGE_2000_DPS:
 		return CONVERT_GYRO_RAW_RANGE(axis_data, 2000);
 	case BMI08_GYRO_RANGE_1000_DPS:
@@ -99,50 +99,51 @@ static float bmi088_convert_gyro_axis_data(struct bmi088_contetx context, int16_
 	}
 }
 
-static bool bmi088_read(sensor_context *context, packet *packet)
+static bool bmi088_read(void *context, struct packet *packet)
 {
-	struct bmi88_context context = (bmi088_contetx*) context;
-	struct bmi08_sensor_data* gyro_data;
-	struct bmi08_sensor_data* accel_data;
+	struct bmi088_ctx *ctx = (struct bmi088_ctx*) context;
+	struct bmi08_sensor_data gyro_data;
+	struct bmi08_sensor_data accel_data;
 
-	bmi08a_get_data(accel_data, &contetx->dev);
-	bmi08g_get_data(gyro_data, &contetx->dev);
+	bmi08a_get_data(&accel_data, &ctx->dev);
+	bmi08g_get_data(&gyro_data, &ctx->dev);
 
-	packet->acceleration_x_mss = bmi088_convert_accel_axis_data(&context, accel_data.x);
-	packet->acceleration_y_mss = bmi088_convert_accel_axis_data(&context, accel_data.y);
-	packet->acceleration_z_mss = bmi088_convert_accel_axis_data(&context, accel_data.z);
+	packet->acceleration_x_mss = bmi088_convert_accel_axis_data(ctx, accel_data.x);
+	packet->acceleration_y_mss = bmi088_convert_accel_axis_data(ctx, accel_data.y);
+	packet->acceleration_z_mss = bmi088_convert_accel_axis_data(ctx, accel_data.z);
 
-	packet->angular_velocity_x_rads = bmi088_convert_gyro_axis_data(&context, gyro_data.x);
-	packet->angular_velocity_y_rads = bmi088_convert_gyro_axis_data(&context, gyro_data.y);
-	packet->angular_velocity_z_rads = bmi088_convert_gyro_axis_data(&context, gyro_data.z);
+	packet->angular_velocity_x_rads = bmi088_convert_gyro_axis_data(ctx, gyro_data.x);
+	packet->angular_velocity_y_rads = bmi088_convert_gyro_axis_data(ctx, gyro_data.y);
+	packet->angular_velocity_z_rads = bmi088_convert_gyro_axis_data(ctx, gyro_data.z);
+	return true;
 }
 
-int8_t bmi088_init(struct bmi088_context *context, struct sensor *sensor)
+int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor)
 {
-	HAL_GPIO_WritePin(context->accl_intf->gpio_port, context->accl_intf->gpio_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(context->gyro_intf->gpio_port, context->gyro_intf->gpio_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ctx->accel_intf.gpio_port, ctx->accel_intf.gpio_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ctx->gyro_intf.gpio_port, ctx->gyro_intf.gpio_pin, GPIO_PIN_SET);
 
 	struct bmi08_accel_int_channel_cfg accel_new_data_int_cfg;
 	struct bmi08_gyro_int_channel_cfg gyro_new_data_int_cfg;
 
-	bmi->dev.intf_ptr_accel = &bmi->accel_intf;
-	bmi->dev.intf_ptr_gyro = &bmi->gyro_intf;
-	bmi->dev.intf = BMI08_SPI_INTF;
-	bmi->dev.variant = BMI088_VARIANT;
-	bmi->dev.read_write_len = 8;
-	bmi->dev.read = bmi088_read_spi;
-	bmi->dev.write = bmi088_write_spi;
-	bmi->dev.delay_us = bmi088_delay_us;
+	ctx->dev.intf_ptr_accel = &ctx->accel_intf;
+	ctx->dev.intf_ptr_gyro = &ctx->gyro_intf;
+	ctx->dev.intf = BMI08_SPI_INTF;
+	ctx->dev.variant = BMI088_VARIANT;
+	ctx->dev.read_write_len = 8;
+	ctx->dev.read = bmi088_read_spi;
+	ctx->dev.write = bmi088_write_spi;
+	ctx->dev.delay_us = bmi088_delay_us;
 
-	bmi->dev.accel_cfg.power = BMI08_ACCEL_PM_ACTIVE;
-	bmi->dev.accel_cfg.range = BMI088_ACCEL_RANGE_24G;
-	bmi->dev.accel_cfg.bw = BMI08_ACCEL_BW_NORMAL;
-	bmi->dev.accel_cfg.odr = BMI08_ACCEL_ODR_800_HZ;
+	ctx->dev.accel_cfg.power = BMI08_ACCEL_PM_ACTIVE;
+	ctx->dev.accel_cfg.range = BMI088_ACCEL_RANGE_24G;
+	ctx->dev.accel_cfg.bw = BMI08_ACCEL_BW_NORMAL;
+	ctx->dev.accel_cfg.odr = BMI08_ACCEL_ODR_800_HZ;
 
-	bmi->dev.gyro_cfg.power = BMI08_GYRO_PM_NORMAL;
-	bmi->dev.gyro_cfg.range = BMI08_GYRO_RANGE_2000_DPS;
-	bmi->dev.gyro_cfg.bw = BMI08_GYRO_BW_116_ODR_1000_HZ;
-	bmi->dev.gyro_cfg.odr = BMI08_GYRO_BW_116_ODR_1000_HZ;
+	ctx->dev.gyro_cfg.power = BMI08_GYRO_PM_NORMAL;
+	ctx->dev.gyro_cfg.range = BMI08_GYRO_RANGE_2000_DPS;
+	ctx->dev.gyro_cfg.bw = BMI08_GYRO_BW_116_ODR_1000_HZ;
+	ctx->dev.gyro_cfg.odr = BMI08_GYRO_BW_116_ODR_1000_HZ;
 
 	accel_new_data_int_cfg.int_channel = BMI08_INT_CHANNEL_1;
 	accel_new_data_int_cfg.int_type = BMI08_ACCEL_INT_DATA_RDY;
@@ -158,67 +159,67 @@ int8_t bmi088_init(struct bmi088_context *context, struct sensor *sensor)
 
 	int8_t ret = BMI08_OK;
 
-	ret = bmi08a_soft_reset(&context->dev);
+	ret = bmi08a_soft_reset(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08xa_init(&context->dev);
+	ret = bmi08xa_init(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08a_load_config_file(&context->dev);
+	ret = bmi08a_load_config_file(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08a_set_power_mode(&context->dev);
+	ret = bmi08a_set_power_mode(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08xa_set_meas_conf(&context->dev);
+	ret = bmi08xa_set_meas_conf(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08a_set_int_config(&accel_new_data_int_cfg, &bmi->context);
+	ret = bmi08a_set_int_config(&accel_new_data_int_cfg, &ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08g_soft_reset(&bmi->context);
+	ret = bmi08g_soft_reset(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08g_init(&bmi->context);
+	ret = bmi08g_init(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08g_set_power_mode(&bmi->context);
+	ret = bmi08g_set_power_mode(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08g_set_meas_conf(&bmi->context);
+	ret = bmi08g_set_meas_conf(&ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;
 	}
 
-	ret = bmi08g_set_int_config(&gyro_new_data_int_cfg, &bmi->context);
+	ret = bmi08g_set_int_config(&gyro_new_data_int_cfg, &ctx->dev);
 
 	if (ret != BMI08_OK) {
 		return ret;

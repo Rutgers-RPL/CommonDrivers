@@ -6,37 +6,21 @@
  */
 
 #include "CD-PA1616S.h"
-#include "sensor.h"
 
-#include "stm32xxxx_hal.h"
+#include "sensor.h"
+#include "stm32f4xx_hal.h"
 
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-bool gps_init(gps_context *context, struct sensor *sensor)
-{
-    assert(context->uart != NULL);
-
-    context->buffer = {0};
-    sensor->context = context;
-    sensor->read = gps_read;
-
-    // Initialize GPS DMA Reception
-    char command[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
-    HAL_UART_Transmit(uart, (uint8_t*) command, sizeof(command) - 1, HAL_MAX_DELAY);
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, context->buffer, BUFFER_SIZE);
-
-    return true;
-}
-
 //  ParseGPSData: Single function to find and parse $GNGGA / $GPGGA
 //    Returns 1 if successful, 0 otherwise
-bool gps_read(struct sensor_context *context, struct packet *packet)
+static bool gps_read(void *context, struct packet *packet)
 {
-    struct gps_context context = (gps_context*) context;
-    char buffer = context->buffer;
+    struct gps_ctx *ctx = (struct gps_ctx*) context;
+    char *buffer = (char*) ctx->buffer;
 
     // Search manually for either "$GNGGA" or "$GPGGA" in buffer
     const char *gga_start = NULL;
@@ -156,5 +140,20 @@ bool gps_read(struct sensor_context *context, struct packet *packet)
     packet->gpsFixType = fix;
     packet->numSatellites = sats;
     packet->gps_hMSL_m = alt;
+    return true;
+}
+
+bool gps_init(struct gps_ctx *ctx, struct sensor *sensor)
+{
+    assert(ctx->uart != NULL);
+
+    sensor->ctx = ctx;
+    sensor->read = gps_read;
+
+    // Initialize GPS DMA Reception
+    char command[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
+    HAL_UART_Transmit(ctx->uart, (uint8_t*) command, sizeof(command) - 1, HAL_MAX_DELAY);
+    HAL_UARTEx_ReceiveToIdle_DMA(ctx->uart, ctx->buffer, BUFFER_SIZE);
+
     return true;
 }

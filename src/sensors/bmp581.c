@@ -4,7 +4,7 @@
 
 #include "bmp5.h"
 #include "bmp5_defs.h"
-#include "stm32xxxx_hal.h"
+#include "stm32f4xx_hal.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -83,68 +83,68 @@ static void delay(uint32_t period, void *intf_ptr) {
     HAL_Delay(ceil((double)(period)/(1000.0)));
 }
 
-static bool bmp581_read(sensor_context *context, packet *packet)
+static bool bmp581_read(void *context, struct packet *packet)
 {
-    struct bmp581_context context = (bmp581_context*) context;
+    struct bmp581_ctx *ctx = (struct bmp581_ctx*) context;
     struct bmp5_sensor_data data;
 
-    bmp5_get_sensor_data(data, &(context->odr_config), &(context->device));
+    bmp5_get_sensor_data(&data, &(ctx->odr_config), &(ctx->dev));
 
     packet->barometer_hMSL_m = bmp581_estimate_altitude_msl(&data);
     packet->temperature_c = data.temperature;
-    packet.kf_position_m = data.pressure;
+    packet->kf_position_m = data.pressure;
     return true;
 }
 
-int8_t bmp581_init(struct sensor *sensor, struct bmp581_context *context);
+int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor)
 {
-    assert(context->i2c != NULL);
+    assert(ctx->i2c != NULL);
     int8_t result = BMP5_OK;
 
-    context->device.intf = BMP5_I2C_INTF;
-    context->device.read = read_i2c;
-    context->device.write = write_i2c;
-    context->device.intf_ptr = handle;
-    context->device.delay_us = delay;
-    context->odr_config.odr = BMP5_ODR_240_HZ;
-    context->odr_config.press_en = BMP5_ENABLE;
-    context->int_config.drdy_en = BMP5_ENABLE;
-    context->int_config.fifo_full_en = BMP5_DISABLE;
-    context->int_config.fifo_thres_en = BMP5_DISABLE;
-    context->int_config.oor_press_en = BMP5_DISABLE;
+    ctx->dev.intf = BMP5_I2C_INTF;
+    ctx->dev.read = read_i2c;
+    ctx->dev.write = write_i2c;
+    ctx->dev.intf_ptr = ctx->i2c;
+    ctx->dev.delay_us = delay;
+    ctx->odr_config.odr = BMP5_ODR_240_HZ;
+    ctx->odr_config.press_en = BMP5_ENABLE;
+    ctx->int_config.drdy_en = BMP5_ENABLE;
+    ctx->int_config.fifo_full_en = BMP5_DISABLE;
+    ctx->int_config.fifo_thres_en = BMP5_DISABLE;
+    ctx->int_config.oor_press_en = BMP5_DISABLE;
 
-    sensor->context = context;
+    sensor->ctx = ctx;
     sensor->read = bmp581_read;
 
-    bmp5_soft_reset(&(context->device));
+    bmp5_soft_reset(&(ctx->dev));
 
     // Initialize the device
-    result = bmp5_init(&(context->device));
+    result = bmp5_init(&(ctx->dev));
     if (result != BMP5_OK) {
 	return result;
     }
 
     // Set odr frequency
-    result = bmp5_set_osr_odr_press_config(&(context->odr_config), &(context->device));
+    result = bmp5_set_osr_odr_press_config(&(ctx->odr_config), &(ctx->dev));
     if (result != BMP5_OK) {
 	return result;
     }
 
-    result = bmp5_int_source_select(&(context->int_config), &(context->device));
+    result = bmp5_int_source_select(&(ctx->int_config), &(ctx->dev));
     if (result != BMP5_OK) {
 	return result;
     }
     // Enable interrupt handler
-    result = bmp5_configure_interrupt(BMP5_PULSED, BMP5_ACTIVE_HIGH, BMP5_INTR_PUSH_PULL, BMP5_INTR_ENABLE, &(context->device));
+    result = bmp5_configure_interrupt(BMP5_PULSED, BMP5_ACTIVE_HIGH, BMP5_INTR_PUSH_PULL, BMP5_INTR_ENABLE, &(ctx->dev));
     if (result != BMP5_OK) {
 	return result;
     }
 
-    result = bmp5_set_power_mode(BMP5_POWERMODE_NORMAL, &(context->device));
+    result = bmp5_set_power_mode(BMP5_POWERMODE_NORMAL, &(ctx->dev));
     return result;
 }
 
-int8_t bmp581_get_power_mode(struct bmp581_context *context, enum bmp5_powermode *powermode)
+int8_t bmp581_get_power_mode(struct bmp581_ctx *ctx, enum bmp5_powermode *powermode)
 {
-    return bmp5_get_power_mode(powermode, &(context->device));
+    return bmp5_get_power_mode(powermode, &(ctx->dev));
 }
