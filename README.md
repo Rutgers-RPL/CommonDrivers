@@ -19,25 +19,36 @@ You may import `defs.h` to use any of the STM32 HAL functions as well as the STA
 
 # Writing Tests 
 
-We use [ceedling](https://www.throwtheswitch.org/ceedling), which bundles [unity](https://www.throwtheswitch.org/unity) and [cmock](https://www.throwtheswitch.org/cmock), for unit tests, you only need to download ceedling, which will pull in the rest. See the provided tests for an example of how to write one. The simplified explanation is you can mock header files which allows you to use mock functions. Use the mock functions which look something like
+We use [ceedling](https://www.throwtheswitch.org/ceedling), which bundles [unity](https://www.throwtheswitch.org/unity) and [cmock](https://www.throwtheswitch.org/cmock), for unit tests, you only need to download ceedling, which will pull in the rest. See the provided tests for an example of how to write one. The simplified explanation is you can mock header files which allows you to use mock functions. You can use the mock functions which look something like the following
 
 ```c
 #include "unity.h"
 #include "cmock.h"
 #include "mock_header.h"
 
-struct fake_sensor_data fake = {
-	.pressure = 341,
-	.temperature = 231,
-};
-your_function_name_ExpectAnyArgsAndReturn(true);
-// sensor_data is the parameter name of your_function_name 
-your_function_name_ReturnMemThruPtr_sensor_data(&fake, sizeof(fake));
+void test_your_feature()
+{
+    struct fake_sensor_data fake = {
+    	.pressure = 341,
+    	.temperature = 231,
+    };
+    mock_function_name_ExpectAnyArgsAndReturn(true);
+    // sensor_data is the parameter name of your_function_name 
+    mock_function_name_ReturnMemThruPtr_sensor_data(&fake, sizeof(fake));
+	
+	bool res = your_feature();
+	
+	// Now whenever `mock_function_name` gets called in `your_feature`
+	// it will set `sensor_data` to `fake`
+
+    // Run asserts
+    TEST_ASSERT_EQUAL_FLOAT(...);
+}
 ```
 
 Then instead of actually calling the function, cmock will return your `fake` data and your code runs as usual. To tell "cmock" to mock a header file, just add `#include "mock_headername.c"` where headername is the name of your header file. See cmock documentation for list of things you can mock.
 
-If you are running the tests and hit an undefined HAL function or reference, you may add it to `/test/support/stub_hal.h` 
+If you are running the tests and hit an undefined HAL function or reference, you may add it to `test/support/stub_hal.h`
 
 ```c
 // For functions
@@ -57,7 +68,7 @@ This allows the compilation to run smoothly while also allowing us to ignore the
 After you write a test, you can run in the project root directory
 
 ```sh
-// Only needed for the first time to fetch dependencies
+# Only needed for the first time to fetch dependencies
 cmake -B build
 ceedling test:all
 ```
