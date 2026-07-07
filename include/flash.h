@@ -2,7 +2,7 @@
 #define FLASH_H
 
 #include "lfs.h"
-#include "stm32f4xx_hal.h"
+#include "defs.h"
 
 #include <stdint.h>
 

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct packet {
+struct  __attribute__((packed)) packet {
   int16_t magic;                   // 2 bytes
   uint32_t status;                 // 4 bytes
   uint32_t time_us;                // 4 bytes
@@ -34,11 +34,11 @@ struct packet {
   float y;                         // 4 bytes
   float z;                         // 4 bytes
   uint32_t checksum;               // 4 bytes
-} __attribute__((packed)) packet;
+};
 
 struct sensor { 
   bool (*read)(void*, struct packet*);
   void* ctx;
 };
 
-#endif // FLASH_H
+#endif // SENSOR_H

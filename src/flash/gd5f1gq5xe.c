@@ -1,6 +1,6 @@
 #include "gd5f1gq5xe.h"
 
-#include "stm32f4xx_hal.h"
+#include "defs.h"
 
 // Flash Commands
 #define GD5F_SET_FEATURE      0x1F

@@ -1,9 +1,9 @@
 #ifndef BMP581_H
 #define BMP581_H
 
-#include "sensor.h"
 #include "bmp5_defs.h"
-#include "stm32f4xx_hal.h"
+#include "sensor.h"
+#include "defs.h"
 
 #include <stdint.h>
 

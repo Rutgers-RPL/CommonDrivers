@@ -5,19 +5,20 @@
  *      Author: Dhruv Shah
  */
 
+#include "sensor.h"
+#include "defs.h"
+
 #include "bmi08_defs.h"
 #include "bmi088.h"
 #include "bmi08x.h"
 #include "bmi08.h"
-
-#include "stm32f4xx_hal.h"
 
 #include <stdint.h>
 #include <math.h>
 
 #define CONVERT_GYRO_RAW_RANGE(raw, range) ((((float)raw * (float)range) / 32768.0f) * (M_PI / 180.0f))
 
-static BMI08_INTF_RET_TYPE bmi088_read_spi(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr)
+static BMI08_INTF_RET_TYPE bmi088_read_spi(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
 	struct bmi088_sensor_intf* sensor_intf = (struct bmi088_sensor_intf*) intf_ptr;
 
@@ -44,7 +45,7 @@ static BMI08_INTF_RET_TYPE bmi088_read_spi(uint8_t reg_addr, uint8_t *reg_data, 
 	return 0;
 }
 
-static BMI08_INTF_RET_TYPE bmi088_write_spi(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr)
+static BMI08_INTF_RET_TYPE bmi088_write_spi(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
 	struct bmi088_sensor_intf* sensor_intf = (struct bmi088_sensor_intf*) intf_ptr;
 
@@ -71,7 +72,7 @@ static BMI08_INTF_RET_TYPE bmi088_write_spi(uint8_t reg_addr, const uint8_t *reg
 	return 0;
 }
 
-static void bmi088_delay_us(uint32_t period, void *intf_ptr)
+static void bmi088_delay_us(uint32_t period, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
 	HAL_Delay(ceil((double)(period)/(1000.0)));
 }
@@ -99,7 +100,7 @@ static float bmi088_convert_gyro_axis_data(struct bmi088_ctx *ctx, int16_t axis_
 	}
 }
 
-static bool bmi088_read(void *context, struct packet *packet)
+STATIC bool bmi088_read(void *context, struct packet *packet)
 {
 	struct bmi088_ctx *ctx = (struct bmi088_ctx*) context;
 	struct bmi08_sensor_data gyro_data;
@@ -118,7 +119,7 @@ static bool bmi088_read(void *context, struct packet *packet)
 	return true;
 }
 
-int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor)
+int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_FUNCTION
 {
 	HAL_GPIO_WritePin(ctx->accel_intf.gpio_port, ctx->accel_intf.gpio_pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(ctx->gyro_intf.gpio_port, ctx->gyro_intf.gpio_pin, GPIO_PIN_SET);

@@ -9,8 +9,9 @@
 #define INC_BMI088_H_
 
 #include "sensor.h"
+#include "defs.h"
+
 #include "bmi08_defs.h"
-#include "stm32f4xx_hal.h"
 
 #include <stdint.h>
 

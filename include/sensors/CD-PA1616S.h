@@ -9,7 +9,7 @@
 #define INC_CD_PA1616S_H_
 
 #include "sensor.h"
-#include "stm32f4xx_hal.h"
+#include "defs.h"
 
 #include <stdint.h>
 #include <stdbool.h>

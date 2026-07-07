@@ -1,10 +1,10 @@
 #include "bmp581.h"
 
 #include "sensor.h"
+#include "defs.h"
 
 #include "bmp5.h"
 #include "bmp5_defs.h"
-#include "stm32f4xx_hal.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -64,7 +64,7 @@ static inline float bmp581_estimate_altitude_msl(struct bmp5_sensor_data *data)
     }
 }
 
-static BMP5_INTF_RET_TYPE read_i2c(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr)
+static BMP5_INTF_RET_TYPE read_i2c(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
     I2C_HandleTypeDef *handle = (I2C_HandleTypeDef*) intf_ptr;
     HAL_StatusTypeDef read_ret = HAL_I2C_Mem_Read(handle, BMP5_I2C_ADDR_PRIM << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
@@ -72,18 +72,19 @@ static BMP5_INTF_RET_TYPE read_i2c(uint8_t reg_addr, uint8_t *reg_data, uint32_t
     return read_ret;
 }
 
-static BMP5_INTF_RET_TYPE write_i2c(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr)
+static BMP5_INTF_RET_TYPE write_i2c(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
     I2C_HandleTypeDef *handle = (I2C_HandleTypeDef*) intf_ptr;
     HAL_StatusTypeDef write_ret = HAL_I2C_Mem_Write(handle, BMP5_I2C_ADDR_PRIM << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
     return write_ret;
 }
 
-static void delay(uint32_t period, void *intf_ptr) {
+static void delay(uint32_t period, void *intf_ptr) // GCOVR_EXCL_FUNCTION
+{
     HAL_Delay(ceil((double)(period)/(1000.0)));
 }
 
-static bool bmp581_read(void *context, struct packet *packet)
+STATIC bool bmp581_read(void *context, struct packet *packet)
 {
     struct bmp581_ctx *ctx = (struct bmp581_ctx*) context;
     struct bmp5_sensor_data data;
@@ -96,7 +97,7 @@ static bool bmp581_read(void *context, struct packet *packet)
     return true;
 }
 
-int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor)
+int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_FUNCTION
 {
     assert(ctx->i2c != NULL);
     int8_t result = BMP5_OK;
@@ -144,7 +145,7 @@ int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor)
     return result;
 }
 
-int8_t bmp581_get_power_mode(struct bmp581_ctx *ctx, enum bmp5_powermode *powermode)
+int8_t bmp581_get_power_mode(struct bmp581_ctx *ctx, enum bmp5_powermode *powermode) // GCOVR_EXCL_FUNCTION
 {
     return bmp5_get_power_mode(powermode, &(ctx->dev));
 }

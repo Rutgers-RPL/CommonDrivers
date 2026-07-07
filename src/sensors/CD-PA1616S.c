@@ -8,7 +8,7 @@
 #include "CD-PA1616S.h"
 
 #include "sensor.h"
-#include "stm32f4xx_hal.h"
+#include "defs.h"
 
 #include <assert.h>
 #include <string.h>
@@ -17,7 +17,7 @@
 
 //  ParseGPSData: Single function to find and parse $GNGGA / $GPGGA
 //    Returns 1 if successful, 0 otherwise
-static bool gps_read(void *context, struct packet *packet)
+STATIC bool gps_read(void *context, struct packet *packet)
 {
     struct gps_ctx *ctx = (struct gps_ctx*) context;
     char *buffer = (char*) ctx->buffer;
