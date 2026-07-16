@@ -35,48 +35,48 @@
 // Note that this flash has a page size of 2048, so we actually only need 11 bytes for
 // the column address.
 
-static void chip_select(struct flash_ctx *context)
+static void chip_select(struct handle_spi *spi)
 {
-	HAL_GPIO_WritePin(context->port, context->pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
 }
 
-static void chip_deselect(struct flash_ctx *context)
+static void chip_deselect(struct handle_spi *spi)
 {
-	HAL_GPIO_WritePin(context->port, context->pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
 }
 
-static bool spi_transmit(struct flash_ctx *context, void *buffer, const size_t size)
+static bool spi_transmit(struct handle_spi *spi, void *buffer, const size_t size)
 {
-	return HAL_SPI_Transmit(context->spi, (uint8_t*) buffer, size, HAL_MAX_DELAY);
+	return HAL_SPI_Transmit(spi->handle, (uint8_t*) buffer, size, HAL_MAX_DELAY);
 }
 
-static bool spi_receive(struct flash_ctx *context, void *buffer, const size_t size)
+static bool spi_receive(struct handle_spi *spi, void *buffer, const size_t size)
 {
-	return HAL_SPI_Receive(context->spi, (uint8_t*) buffer, size, HAL_MAX_DELAY);
+	return HAL_SPI_Receive(spi->handle, (uint8_t*) buffer, size, HAL_MAX_DELAY);
 }
 
-static int write_enable(struct flash_ctx *context)
+static int write_enable(struct handle_spi *spi)
 {
 	uint8_t tx = GD5F_WRITE_ENABLE;
-	chip_select(context);
-	if (spi_transmit(context, &tx, sizeof(tx)) != 0) {
-		chip_deselect(context);
+	chip_select(spi);
+	if (spi_transmit(spi, &tx, sizeof(tx)) != 0) {
+		chip_deselect(spi);
 		return 1;
 	}
-	chip_deselect(context);
+	chip_deselect(spi);
 	return 0;
 }
 
-static bool check_id(struct flash_ctx *context)
+static bool check_id(struct handle_spi *spi)
 {
-	chip_select(context);
+	chip_select(spi);
 	uint8_t cmd[] = { GD5F_READ_ID, 0x00 };
 	uint8_t data[] = { 0, 0 };
-	if (spi_transmit(context, cmd, sizeof(cmd)) != 0) {
-		chip_deselect(context);
+	if (spi_transmit(spi, cmd, sizeof(cmd)) != 0) {
+		chip_deselect(spi);
 	}
-	spi_receive(context, data, sizeof(data));
-	chip_deselect(context);
+	spi_receive(spi, data, sizeof(data));
+	chip_deselect(spi);
 	// Sometimes the check is not consistent
 	// Investigate for now
 	return data[0] == 0xC8 && data[1] == 0x31;
@@ -92,7 +92,7 @@ static bool check_id(struct flash_ctx *context)
 ///   read up to the page-size boundary
 ///
 /// Returns the number of bytes read.
-static uint32_t read_page(struct flash_ctx *context, const uint32_t block,
+static uint32_t read_page(struct handle_spi *spi, const uint32_t block,
 			  const uint32_t offset, void *buffer, uint32_t size)
 {
 	assert(block < GD5F_BLOCK_COUNT);
@@ -111,12 +111,12 @@ static uint32_t read_page(struct flash_ctx *context, const uint32_t block,
 		(addr & 0x00FF00) >> 8,
 		(addr & 0x0000FF)
 	};
-	chip_select(context);
-	if (spi_transmit(context, tx1, sizeof(tx1)) != 0) {
-		chip_deselect(context);
+	chip_select(spi);
+	if (spi_transmit(spi, tx1, sizeof(tx1)) != 0) {
+		chip_deselect(spi);
 		return 0;
 	}
-	chip_deselect(context);
+	chip_deselect(spi);
 	HAL_Delay(2);  // Required delay for cache read
 
 	uint8_t tx2[] = {
@@ -125,17 +125,17 @@ static uint32_t read_page(struct flash_ctx *context, const uint32_t block,
 		(col & 0x00FF),      // remember that we only need 12 bytes
 		0x00                 // we need a dummy byte (from datasheet)
 	};
-	chip_select(context);
-	if (spi_transmit(context, tx2, sizeof(tx2)) != 0) {
-		chip_deselect(context);
+	chip_select(spi);
+	if (spi_transmit(spi, tx2, sizeof(tx2)) != 0) {
+		chip_deselect(spi);
 		return 0;
 	};
 	uint32_t read_size = size <= GD5F_PAGE_SIZE - col ? size : GD5F_PAGE_SIZE - col;
-	if (spi_receive(context, buffer, read_size) != 0) {
-		chip_deselect(context);
+	if (spi_receive(spi, buffer, read_size) != 0) {
+		chip_deselect(spi);
 		return 0;
 	}
-	chip_deselect(context);
+	chip_deselect(spi);
 	return read_size;
 }
 
@@ -147,7 +147,7 @@ static uint32_t read_page(struct flash_ctx *context, const uint32_t block,
 ///   write up to the page-size boundary
 ///
 /// Returns the number of bytes written.
-static uint32_t write_page(struct flash_ctx *context, const uint32_t block,
+static uint32_t write_page(struct handle_spi *spi, const uint32_t block,
 			   const uint32_t offset, const void *buffer, const uint32_t size)
 {
 	assert(block < GD5F_BLOCK_COUNT);
@@ -161,20 +161,20 @@ static uint32_t write_page(struct flash_ctx *context, const uint32_t block,
 		(col & 0x0F00) >> 8,  // similar to before, the first 4 bytes
 		(col & 0x00FF)        // are not needed, hence the 0x0F00
 	};
-	chip_select(context);
-	if (spi_transmit(context, tx1, sizeof(tx1)) != 0) {
-		chip_deselect(context);
+	chip_select(spi);
+	if (spi_transmit(spi, tx1, sizeof(tx1)) != 0) {
+		chip_deselect(spi);
 		return 0;
 	}
 	uint32_t write_size = size <= GD5F_PAGE_SIZE - col ? size : GD5F_PAGE_SIZE - col;
-	if (spi_transmit(context, buffer, write_size) != 0) {
-		chip_deselect(context);
+	if (spi_transmit(spi, buffer, write_size) != 0) {
+		chip_deselect(spi);
 		return 0;
 	};
-	chip_deselect(context);
+	chip_deselect(spi);
 
-	if (write_enable(context) != 0) {
-		chip_deselect(context);
+	if (write_enable(spi) != 0) {
+		chip_deselect(spi);
 		return 0;
 	}
 
@@ -184,22 +184,22 @@ static uint32_t write_page(struct flash_ctx *context, const uint32_t block,
 		(addr & 0x00FF00) >> 8,
 		(addr & 0x0000FF)
 	};
-	chip_select(context);
-	if (spi_transmit(context, tx2, sizeof(tx2)) != 0) {
-		chip_deselect(context);
+	chip_select(spi);
+	if (spi_transmit(spi, tx2, sizeof(tx2)) != 0) {
+		chip_deselect(spi);
 		return 0;
 	}
-	chip_deselect(context);
+	chip_deselect(spi);
 	
 	HAL_Delay(1);
 	return write_size;
 }
 
-static bool read(struct flash_ctx *context, uint32_t block, uint32_t offset, void *buffer, uint32_t size)
+static bool read(struct handle_spi *spi, uint32_t block, uint32_t offset, void *buffer, uint32_t size)
 {
 	uint8_t *buf = (uint8_t *) buffer;
 	while (size > 0) {
-		uint32_t s = read_page(context, block, offset, buf, size);
+		uint32_t s = read_page(spi, block, offset, buf, size);
 		if (s == 0) return false;
 		size -= s;
 		offset += s;
@@ -208,11 +208,11 @@ static bool read(struct flash_ctx *context, uint32_t block, uint32_t offset, voi
 	return true;
 }
 
-static bool write(struct flash_ctx *context, uint32_t block, uint32_t offset, void *buffer, uint32_t size)
+static bool write(struct handle_spi *spi, uint32_t block, uint32_t offset, void *buffer, uint32_t size)
 {
 	uint8_t *buf = (uint8_t *) buffer;
 	while (size > 0) {
-		uint32_t s = write_page(context, block, offset, buf, size);
+		uint32_t s = write_page(spi, block, offset, buf, size);
 		if (s == 0) return false;
 		size -= s;
 		offset += s;
@@ -221,14 +221,14 @@ static bool write(struct flash_ctx *context, uint32_t block, uint32_t offset, vo
 	return true;
 }
 
-static bool erase(struct flash_ctx *context, uint32_t block)
+static bool erase(struct handle_spi *spi, uint32_t block)
 {
 	// Erase acts on blocks and not pages, so we should only have the block
 	// section of the address set and not the page section.
 	uint32_t addr = block * GD5F_PAGES_PER_BLOCK;
 
-	if (write_enable(context) != 0) {
-		chip_deselect(context);
+	if (write_enable(spi) != 0) {
+		chip_deselect(spi);
 		return false;
 	}
 
@@ -238,24 +238,24 @@ static bool erase(struct flash_ctx *context, uint32_t block)
 		(addr & 0x00FF00) >> 8,
 		(addr & 0x0000FF)
 	};
-	chip_select(context);
-	if (spi_transmit(context, tx, sizeof(tx)) != 0) {
-		chip_deselect(context);
+	chip_select(spi);
+	if (spi_transmit(spi, tx, sizeof(tx)) != 0) {
+		chip_deselect(spi);
 		return false;
 	}
-	chip_deselect(context);
+	chip_deselect(spi);
 
 	HAL_Delay(12);
 	return true;
 }
 
-static bool unlock(struct flash_ctx *context)
+static bool unlock(struct handle_spi *spi)
 {
 	// Needed for some reason, I don't know why
 	HAL_Delay(5000);
-	if (!check_id(context)) return false;
-	if (write_enable(context) != 0) {
-		chip_deselect(context);
+	if (!check_id(spi)) return false;
+	if (write_enable(spi) != 0) {
+		chip_deselect(spi);
 		return false;
 	}
 
@@ -264,12 +264,12 @@ static bool unlock(struct flash_ctx *context)
 		0xA0,
 		0x00,
 	};
-	chip_select(context);
-	if (spi_transmit(context, tx, sizeof(tx)) != 0) {
-		chip_deselect(context);
+	chip_select(spi);
+	if (spi_transmit(spi, tx, sizeof(tx)) != 0) {
+		chip_deselect(spi);
 		return false;
 	}
-	chip_deselect(context);
+	chip_deselect(spi);
 
 	HAL_Delay(5000);
 	return true;
@@ -278,23 +278,23 @@ static bool unlock(struct flash_ctx *context)
 static int lfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t offset,
                     void *data, lfs_size_t size)
 {
-	struct flash_ctx *context = (struct flash_ctx*) c->context;
-	if (!read(context, block, offset, data, size)) return LFS_ERR_IO;
+	struct handle_spi *spi = (struct handle_spi*) c->context;
+	if (!read(spi, block, offset, data, size)) return LFS_ERR_IO;
 	return LFS_ERR_OK;
 }
 
 static int lfs_prog(const struct lfs_config *c, lfs_block_t block, lfs_off_t offset,
                     const void *data, lfs_size_t size)
 {
-	struct flash_ctx *context = (struct flash_ctx*) c->context;
-	if (!write(context, block, offset, data, size)) return LFS_ERR_IO;
+	struct handle_spi *spi = (struct handle_spi*) c->context;
+	if (!write(spi, block, offset, data, size)) return LFS_ERR_IO;
 	return LFS_ERR_OK;
 }
 
 static int lfs_erase(const struct lfs_config *c, lfs_block_t block)
 {
-	struct flash_ctx *context = (struct flash_ctx*) c->context;
-	if (!erase(context, block)) return LFS_ERR_IO;
+	struct handle_spi *spi = (struct handle_spi*) c->context;
+	if (!erase(spi, block)) return LFS_ERR_IO;
 	return LFS_ERR_OK;
 }
 
@@ -303,10 +303,11 @@ static int lfs_sync(const struct lfs_config *c)
 	return LFS_ERR_OK;
 }
 
-bool gd5f1gq5xe_init(struct flash *flash, struct flash_ctx *context)
+bool gd5f1gq5xe_init(struct flash *flash, struct handle_spi *spi)
 {
+	assert(spi->handle != NULL);
 	flash->config = (struct lfs_config ) {
-		.context = context,
+		.context = spi,
 		.read  = lfs_read,
 		.prog  = lfs_prog,
 		.erase = lfs_erase,
@@ -320,7 +321,7 @@ bool gd5f1gq5xe_init(struct flash *flash, struct flash_ctx *context)
 		.lookahead_size = 128,
 		.block_cycles   = 512,
 	};
-	if (!unlock(context)) {
+	if (!unlock(spi)) {
 		return false;
 	}
 

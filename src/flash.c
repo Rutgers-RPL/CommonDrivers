@@ -25,7 +25,7 @@ static inline uint32_t offset(uint32_t filesize, uint32_t blocksize)
 	return blocksize - offset;
 }
 
-lfs_ssize_t flash_mount(struct flash *flash)
+uint32_t flash_mount(struct flash *flash)
 {
 	int err = lfs_mount(&flash->lfs, &flash->config);
 	if (err) {
