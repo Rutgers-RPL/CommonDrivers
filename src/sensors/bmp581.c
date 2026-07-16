@@ -64,19 +64,42 @@ static inline float bmp581_estimate_altitude_msl(struct bmp5_sensor_data *data)
     }
 }
 
+#ifdef HAL_I2C_MODULE_ENABLED
 static BMP5_INTF_RET_TYPE read_i2c(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-    I2C_HandleTypeDef *handle = (I2C_HandleTypeDef*) intf_ptr;
-    HAL_StatusTypeDef read_ret = HAL_I2C_Mem_Read(handle, BMP5_I2C_ADDR_PRIM << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
-    uint32_t error = HAL_I2C_GetError(handle);
-    return read_ret;
+    struct handle_i2c *i2c = (struct handle_i2c*) intf_ptr;
+    HAL_StatusTypeDef res = HAL_I2C_Mem_Read(i2c->handle, i2c->address << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
+    return res;
 }
 
 static BMP5_INTF_RET_TYPE write_i2c(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-    I2C_HandleTypeDef *handle = (I2C_HandleTypeDef*) intf_ptr;
-    HAL_StatusTypeDef write_ret = HAL_I2C_Mem_Write(handle, BMP5_I2C_ADDR_PRIM << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
-    return write_ret;
+    struct handle_i2c *i2c = (struct handle_i2c*) intf_ptr;
+    HAL_StatusTypeDef res = HAL_I2C_Mem_Write(i2c->handle, i2c->address << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
+    return res;
+}
+#endif
+
+static BMP5_INTF_RET_TYPE read_spi(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
+{
+    struct handle_spi *spi = (struct handle_spi*) intf_ptr;
+    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
+
+    HAL_StatusTypeDef res = HAL_SPI_Receive(spi->handle, reg_data, length, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
+    return res;
+}
+
+static BMP5_INTF_RET_TYPE write_spi(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
+{
+    struct handle_spi *spi = (struct handle_spi*) intf_ptr;
+    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
+
+    HAL_StatusTypeDef res = HAL_SPI_Transmit(spi->handle, reg_data, length, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
+    return res;
 }
 
 static void delay(uint32_t period, void *intf_ptr) // GCOVR_EXCL_FUNCTION
@@ -99,13 +122,29 @@ STATIC bool bmp581_read(void *context, struct packet *packet)
 
 int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_FUNCTION
 {
-    assert(ctx->i2c != NULL);
     int8_t result = BMP5_OK;
 
-    ctx->dev.intf = BMP5_I2C_INTF;
-    ctx->dev.read = read_i2c;
-    ctx->dev.write = write_i2c;
-    ctx->dev.intf_ptr = ctx->i2c;
+    switch (ctx->handle.protocol) {
+    case SPI:
+        ctx->dev.intf_ptr = &ctx->handle.def.spi;
+        ctx->dev.intf = BMP5_SPI_INTF;
+        ctx->dev.read = read_spi;
+        ctx->dev.write = write_spi;
+        break;
+    case I2C:
+#ifdef HAL_I2C_MODULE_ENABLED
+        ctx->dev.intf_ptr = &ctx->handle.def.i2c;
+        ctx->dev.intf = BMP5_I2C_INTF;
+        ctx->dev.read = read_i2c;
+        ctx->dev.write = write_i2c;
+        break;
+#else
+        assert("I2C module is not enabled! Please choose SPI for BMP581");
+        break;
+#endif
+    default: assert("Invalid interface for bmp581, must choose either SPI or I2C");
+    };
+
     ctx->dev.delay_us = delay;
     ctx->odr_config.odr = BMP5_ODR_240_HZ;
     ctx->odr_config.press_en = BMP5_ENABLE;

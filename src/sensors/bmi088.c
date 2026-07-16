@@ -14,60 +14,61 @@
 #include "bmi08.h"
 
 #include <stdint.h>
+#include <assert.h>
 #include <math.h>
 
 #define CONVERT_GYRO_RAW_RANGE(raw, range) ((((float)raw * (float)range) / 32768.0f) * (M_PI / 180.0f))
 
 static BMI08_INTF_RET_TYPE bmi088_read_spi(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-	struct bmi088_sensor_intf* sensor_intf = (struct bmi088_sensor_intf*) intf_ptr;
+	struct handle_spi* spi = (struct handle_spi*) intf_ptr;
 
-	HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
 
 	HAL_StatusTypeDef ret = HAL_OK;
 
-	ret = HAL_SPI_Transmit(sensor_intf->spi_handle, &reg_addr, 1, HAL_MAX_DELAY);
+	ret = HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
 
 	if (ret != HAL_OK) {
-	    HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_SET);
+	    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
 		return ret;
 	}
 
-	ret = HAL_SPI_Receive(sensor_intf->spi_handle, reg_data, len, HAL_MAX_DELAY);
+	ret = HAL_SPI_Receive(spi->handle, reg_data, len, HAL_MAX_DELAY);
 
 	if (ret != HAL_OK) {
-	    HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_SET);
+	    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
 		return ret;
 	}
 
-    HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
 
 	return 0;
 }
 
 static BMI08_INTF_RET_TYPE bmi088_write_spi(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-	struct bmi088_sensor_intf* sensor_intf = (struct bmi088_sensor_intf*) intf_ptr;
+	struct handle_spi* spi = (struct handle_spi*) intf_ptr;
 
-	HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
 
 	HAL_StatusTypeDef ret = HAL_OK;
 
-	ret = HAL_SPI_Transmit(sensor_intf->spi_handle, &reg_addr, 1, HAL_MAX_DELAY);
+	ret = HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
 
 	if (ret != HAL_OK) {
-		HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
 		return ret;
 	}
 
-	ret = HAL_SPI_Transmit(sensor_intf->spi_handle, reg_data, len, HAL_MAX_DELAY);
+	ret = HAL_SPI_Transmit(spi->handle, reg_data, len, HAL_MAX_DELAY);
 
 	if (ret != HAL_OK) {
-		HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
 		return ret;
 	}
 
-	HAL_GPIO_WritePin(sensor_intf->gpio_port, sensor_intf->gpio_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
 
 	return 0;
 }
@@ -121,14 +122,17 @@ STATIC bool bmi088_read(void *context, struct packet *packet)
 
 int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_FUNCTION
 {
-	HAL_GPIO_WritePin(ctx->accel_intf.gpio_port, ctx->accel_intf.gpio_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(ctx->gyro_intf.gpio_port, ctx->gyro_intf.gpio_pin, GPIO_PIN_SET);
+	assert(ctx->accel_spi.handle != NULL);
+	assert(ctx->gyro_spi.handle != NULL);
+
+	HAL_GPIO_WritePin(ctx->accel_spi.port, ctx->accel_spi.pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ctx->gyro_spi.port, ctx->gyro_spi.pin, GPIO_PIN_SET);
 
 	struct bmi08_accel_int_channel_cfg accel_new_data_int_cfg;
 	struct bmi08_gyro_int_channel_cfg gyro_new_data_int_cfg;
 
-	ctx->dev.intf_ptr_accel = &ctx->accel_intf;
-	ctx->dev.intf_ptr_gyro = &ctx->gyro_intf;
+	ctx->dev.intf_ptr_accel = &ctx->accel_spi;
+	ctx->dev.intf_ptr_gyro = &ctx->gyro_spi;
 	ctx->dev.intf = BMI08_SPI_INTF;
 	ctx->dev.variant = BMI088_VARIANT;
 	ctx->dev.read_write_len = 8;
@@ -225,6 +229,8 @@ int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_
 	if (ret != BMI08_OK) {
 		return ret;
 	}
+	sensor->ctx = ctx;
+	sensor->read = bmi088_read;
 
-	return 0;
+	return BMI08_OK;
 }

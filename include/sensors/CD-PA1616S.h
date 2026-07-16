@@ -8,8 +8,8 @@
 #ifndef INC_CD_PA1616S_H_
 #define INC_CD_PA1616S_H_
 
-#include "sensor.h"
 #include "defs.h"
+#include "sensor.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -18,7 +18,7 @@
 
 struct gps_ctx {
     uint8_t buffer[BUFFER_SIZE]; // used for DMA reception buffer
-    UART_HandleTypeDef *uart;
+    struct handle handle;
 };
 bool gps_init(struct gps_ctx *ctx, struct sensor *sensor);
 
