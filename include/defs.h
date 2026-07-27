@@ -15,7 +15,8 @@
 // Make static work as usual
 #define STATIC static
 // TODO: Abstracts over hal series
-#include "stm32f4xx_hal.h"
+// #include "stm32f4xx_hal.h"
+#include "stm32h7xx_hal_conf.h"
 #endif // end TEST
 
 /// Common abstraction over SPI, UART, I2C
