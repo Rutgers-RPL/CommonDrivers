@@ -147,7 +147,6 @@ bool gps_init(struct gps_ctx *ctx, struct sensor *sensor)
 {
 #ifdef HAL_UART_MODULE_ENABLED
     assert(ctx->handle.def.uart.handle != NULL);
-    assert(ctx->handle.def.uart.handle != NULL);
 
     sensor->ctx = ctx;
     sensor->read = gps_read;
