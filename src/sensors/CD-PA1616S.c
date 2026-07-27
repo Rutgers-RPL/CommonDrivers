@@ -146,16 +146,15 @@ STATIC bool gps_read(void *context, struct packet *packet)
 bool gps_init(struct gps_ctx *ctx, struct sensor *sensor)
 {
 #ifdef HAL_UART_MODULE_ENABLED
-    assert(ctx->uart.handle != NULL);
-    assert(ctx->uart.def.uart.handle != NULL);
+    assert(ctx->handle.def.uart.handle != NULL);
 
     sensor->ctx = ctx;
     sensor->read = gps_read;
 
     // Initialize GPS DMA Reception
     char command[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
-    HAL_UART_Transmit(ctx->uart.def.uart.handle, (uint8_t*) command, sizeof(command) - 1, HAL_MAX_DELAY);
-    HAL_UARTEx_ReceiveToIdle_DMA(ctx->uart.def.uart.handle, ctx->buffer, BUFFER_SIZE);
+    HAL_UART_Transmit(ctx->handle.def.uart.handle, (uint8_t*) command, sizeof(command) - 1, HAL_MAX_DELAY);
+    HAL_UARTEx_ReceiveToIdle_DMA(ctx->handle.def.uart.handle, ctx->buffer, BUFFER_SIZE);
     return true;
 #else
     assert("UART module is not enabled! CD-PA161 only supports UART!");
