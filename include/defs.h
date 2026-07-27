@@ -17,7 +17,6 @@
 // TODO: Abstracts over hal series
 #ifdef USE_STM32_H7XX
 #include "stm32h7xx_hal.h"
-#include "stm32h7xx_hal_conf.h"
 #else
 #include "stm32f4xx_hal.h"
 #endif
