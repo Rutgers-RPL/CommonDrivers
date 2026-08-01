@@ -48,6 +48,7 @@ target_include_directories(littlefs PUBLIC ${littlefs_SOURCE_DIR})
 message(STATUS "Dependencies resolved, now creating library...")
 add_library(common_drivers STATIC
   "${CMAKE_CURRENT_SOURCE_DIR}/src/flash.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/defs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/flash/gd5f1gq5xe.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/sensors/bmp581.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/sensors/bmi088.c"

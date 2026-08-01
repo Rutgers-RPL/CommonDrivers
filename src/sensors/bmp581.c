@@ -64,42 +64,25 @@ static inline float bmp581_estimate_altitude_msl(struct bmp5_sensor_data *data)
     }
 }
 
-#ifdef HAL_I2C_MODULE_ENABLED
-static BMP5_INTF_RET_TYPE read_i2c(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
+static inline int8_t bmp581_get_power_mode(struct bmp581_ctx *ctx, enum bmp5_powermode *powermode) // GCOVR_EXCL_FUNCTION
 {
-    struct handle_i2c *i2c = (struct handle_i2c*) intf_ptr;
-    HAL_StatusTypeDef res = HAL_I2C_Mem_Read(i2c->handle, i2c->address << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
-    return res;
+    return bmp5_get_power_mode(powermode, &(ctx->dev));
 }
 
-static BMP5_INTF_RET_TYPE write_i2c(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
+static BMP5_INTF_RET_TYPE read(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-    struct handle_i2c *i2c = (struct handle_i2c*) intf_ptr;
-    HAL_StatusTypeDef res = HAL_I2C_Mem_Write(i2c->handle, i2c->address << 1, reg_addr, I2C_MEMADD_SIZE_8BIT, reg_data, length, HAL_MAX_DELAY);
-    return res;
-}
-#endif
-
-static BMP5_INTF_RET_TYPE read_spi(uint8_t reg_addr, uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
-{
-    struct handle_spi *spi = (struct handle_spi*) intf_ptr;
-    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
-
-    HAL_StatusTypeDef res = HAL_SPI_Receive(spi->handle, reg_data, length, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-    return res;
+    struct serial_api *api = (struct serial_api*) intf_ptr;
+    struct op_params params = { .cmd = &reg_addr, .cmd_size = 1,
+                                .buffer = reg_data, .buffer_size = length };
+    return api->read(api->handle, &params);
 }
 
-static BMP5_INTF_RET_TYPE write_spi(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
+static BMP5_INTF_RET_TYPE write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t length, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-    struct handle_spi *spi = (struct handle_spi*) intf_ptr;
-    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
-
-    HAL_StatusTypeDef res = HAL_SPI_Transmit(spi->handle, reg_data, length, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-    return res;
+    struct serial_api *api = (struct serial_api*) intf_ptr;
+    struct op_params params = { .cmd = &reg_addr, .cmd_size = 1,
+                                .buffer = reg_data, .buffer_size = length };
+    return api->write(api->handle, &params);
 }
 
 static void delay(uint32_t period, void *intf_ptr) // GCOVR_EXCL_FUNCTION
@@ -120,31 +103,29 @@ STATIC bool bmp581_read(void *context, struct packet *packet)
     return true;
 }
 
-int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_FUNCTION
+int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor, struct handle *handle) // GCOVR_EXCL_FUNCTION
 {
     int8_t result = BMP5_OK;
 
-    switch (ctx->handle.protocol) {
+    sensor->ctx = ctx;
+    sensor->read = bmp581_read;
+
+    switch (handle->protocol) {
     case SPI:
-        ctx->dev.intf_ptr = &ctx->handle.def.spi;
         ctx->dev.intf = BMP5_SPI_INTF;
-        ctx->dev.read = read_spi;
-        ctx->dev.write = write_spi;
+        serial_api_spi(&ctx->api, handle);
         break;
     case I2C:
-#ifdef HAL_I2C_MODULE_ENABLED
-        ctx->dev.intf_ptr = &ctx->handle.def.i2c;
         ctx->dev.intf = BMP5_I2C_INTF;
-        ctx->dev.read = read_i2c;
-        ctx->dev.write = write_i2c;
+        serial_api_i2c(&ctx->api, handle);
         break;
-#else
-        assert("I2C module is not enabled! Please choose SPI for BMP581");
-        break;
-#endif
-    default: assert("Invalid interface for bmp581, must choose either SPI or I2C");
+    default:
+        assert("Invalid interface for bmp581, must choose either SPI or I2C");
     };
 
+    ctx->dev.intf_ptr = &ctx->api;
+    ctx->dev.read = read;
+    ctx->dev.write = write;
     ctx->dev.delay_us = delay;
     ctx->odr_config.odr = BMP5_ODR_240_HZ;
     ctx->odr_config.press_en = BMP5_ENABLE;
@@ -152,9 +133,6 @@ int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_
     ctx->int_config.fifo_full_en = BMP5_DISABLE;
     ctx->int_config.fifo_thres_en = BMP5_DISABLE;
     ctx->int_config.oor_press_en = BMP5_DISABLE;
-
-    sensor->ctx = ctx;
-    sensor->read = bmp581_read;
 
     bmp5_soft_reset(&(ctx->dev));
 
@@ -182,9 +160,4 @@ int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_
 
     result = bmp5_set_power_mode(BMP5_POWERMODE_NORMAL, &(ctx->dev));
     return result;
-}
-
-int8_t bmp581_get_power_mode(struct bmp581_ctx *ctx, enum bmp5_powermode *powermode) // GCOVR_EXCL_FUNCTION
-{
-    return bmp5_get_power_mode(powermode, &(ctx->dev));
 }

@@ -2,6 +2,7 @@
 #include "cmock.h"
 
 #include "mock_bmp5.h"
+#include "mock_defs.h"
 
 #include "bmp581.h"
 #include "sensor.h"

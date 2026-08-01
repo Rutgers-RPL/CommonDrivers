@@ -2,11 +2,13 @@
 #define FLASH_H
 
 #include "lfs.h"
+#include "defs.h"
 
 #include <stdint.h>
 
 struct flash {
 	struct lfs_config config;
+	struct serial_api api;
 	lfs_t lfs;
 };
 

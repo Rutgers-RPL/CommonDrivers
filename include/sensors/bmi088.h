@@ -16,9 +16,10 @@
 
 struct bmi088_ctx {
 	struct bmi08_dev dev;
-	struct handle_spi accel_spi;
-	struct handle_spi gyro_spi;
+	struct serial_api accel;
+	struct serial_api gyro;
 };
-int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor);
+int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor,
+		   struct handle* accel, struct handle* gyro);
 
 #endif /* INC_BMI088_H_ */

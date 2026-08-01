@@ -21,56 +21,18 @@
 
 static BMI08_INTF_RET_TYPE bmi088_read_spi(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-	struct handle_spi* spi = (struct handle_spi*) intf_ptr;
-
-	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
-
-	HAL_StatusTypeDef ret = HAL_OK;
-
-	ret = HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
-
-	if (ret != HAL_OK) {
-	    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-		return ret;
-	}
-
-	ret = HAL_SPI_Receive(spi->handle, reg_data, len, HAL_MAX_DELAY);
-
-	if (ret != HAL_OK) {
-	    HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-		return ret;
-	}
-
-	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-
-	return 0;
+	struct serial_api *api = (struct serial_api*) intf_ptr;
+	struct op_params params = { .cmd = &reg_addr, .cmd_size = 1,
+                                    .buffer = reg_data, .buffer_size = len };
+	return api->read(api->handle, &params);
 }
 
 static BMI08_INTF_RET_TYPE bmi088_write_spi(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr) // GCOVR_EXCL_FUNCTION
 {
-	struct handle_spi* spi = (struct handle_spi*) intf_ptr;
-
-	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_RESET);
-
-	HAL_StatusTypeDef ret = HAL_OK;
-
-	ret = HAL_SPI_Transmit(spi->handle, &reg_addr, 1, HAL_MAX_DELAY);
-
-	if (ret != HAL_OK) {
-		HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-		return ret;
-	}
-
-	ret = HAL_SPI_Transmit(spi->handle, reg_data, len, HAL_MAX_DELAY);
-
-	if (ret != HAL_OK) {
-		HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-		return ret;
-	}
-
-	HAL_GPIO_WritePin(spi->port, spi->pin, GPIO_PIN_SET);
-
-	return 0;
+	struct serial_api *api = (struct serial_api*) intf_ptr;
+	struct op_params params = { .cmd = &reg_addr, .cmd_size = 1,
+                                    .buffer = reg_data, .buffer_size = len };
+	return api->write(api->handle, &params);
 }
 
 static void bmi088_delay_us(uint32_t period, void *intf_ptr) // GCOVR_EXCL_FUNCTION
@@ -120,19 +82,22 @@ STATIC bool bmi088_read(void *context, struct packet *packet)
 	return true;
 }
 
-int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor) // GCOVR_EXCL_FUNCTION
+int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor,
+		   struct handle* accel, struct handle* gyro) // GCOVR_EXCL_FUNCTION
 {
-	assert(ctx->accel_spi.handle != NULL);
-	assert(ctx->gyro_spi.handle != NULL);
-
-	HAL_GPIO_WritePin(ctx->accel_spi.port, ctx->accel_spi.pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(ctx->gyro_spi.port, ctx->gyro_spi.pin, GPIO_PIN_SET);
-
+	assert(accel->protocol == SPI && gyro->protocol == SPI);
+	struct handle_spi *spi_accel = handle_as_spi(accel);
+	struct handle_spi *spi_gyro = handle_as_spi(gyro);
 	struct bmi08_accel_int_channel_cfg accel_new_data_int_cfg;
 	struct bmi08_gyro_int_channel_cfg gyro_new_data_int_cfg;
 
-	ctx->dev.intf_ptr_accel = &ctx->accel_spi;
-	ctx->dev.intf_ptr_gyro = &ctx->gyro_spi;
+	HAL_GPIO_WritePin(spi_accel->port, spi_accel->pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(spi_gyro->port, spi_gyro->pin, GPIO_PIN_SET);
+	serial_api_spi(&ctx->accel, accel);
+	serial_api_spi(&ctx->gyro, gyro);
+
+	ctx->dev.intf_ptr_accel = &ctx->accel;
+	ctx->dev.intf_ptr_gyro = &ctx->gyro;
 	ctx->dev.intf = BMI08_SPI_INTF;
 	ctx->dev.variant = BMI088_VARIANT;
 	ctx->dev.read_write_len = 8;

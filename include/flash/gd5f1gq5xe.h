@@ -7,6 +7,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-bool gd5f1gq5xe_init(struct flash *flash, struct handle_spi *spi);
+bool gd5f1gq5xe_init(struct flash *flash, struct handle *handle);
 
 #endif
