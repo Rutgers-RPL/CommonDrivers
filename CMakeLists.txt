@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
-enable_language(C)
+project(CommonDrivers)
+enable_language(C CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
@@ -13,14 +17,6 @@ FetchContent_Declare(bmi08
   GIT_TAG master
 )
 FetchContent_MakeAvailable(bmi08)
-add_library(bmi08 STATIC
-    ${bmi08_SOURCE_DIR}/bmi08a.c
-    ${bmi08_SOURCE_DIR}/bmi08g.c
-    ${bmi08_SOURCE_DIR}/bmi08xa.c
-    ${bmi08_SOURCE_DIR}/bmi088_mma.c
-    ${bmi08_SOURCE_DIR}/bmi088_anymotiona.c
-)
-target_include_directories(bmi08 PUBLIC ${bmi08_SOURCE_DIR})
 
 message(STATUS "Resolving bmp5 sensors api dependency...")
 FetchContent_Declare(bmp5
@@ -29,8 +25,6 @@ FetchContent_Declare(bmp5
   GIT_TAG master
 )
 FetchContent_MakeAvailable(bmp5)
-add_library(bmp5 STATIC ${bmp5_SOURCE_DIR}/bmp5.c)
-target_include_directories(bmp5 PUBLIC ${bmp5_SOURCE_DIR})
 
 message(STATUS "Resolving littlefs dependency...")
 FetchContent_Declare(littlefs
@@ -39,32 +33,79 @@ FetchContent_Declare(littlefs
   GIT_TAG master
 )
 FetchContent_MakeAvailable(littlefs)
-add_library(littlefs STATIC
-  ${littlefs_SOURCE_DIR}/lfs.c
-  ${littlefs_SOURCE_DIR}/lfs_util.c
-)
-target_include_directories(littlefs PUBLIC ${littlefs_SOURCE_DIR})
 
-message(STATUS "Dependencies resolved, now creating library...")
-add_library(common_drivers STATIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/flash.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/flash/gd5f1gq5xe.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/sensors/bmp581.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/sensors/bmi088.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/sensors/CD-PA1616S.c"
+message(STATUS "Resolving gtest dependency...")
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.18.0
 )
-target_include_directories(common_drivers PUBLIC 
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include/flash"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include/sensors"
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+message(STATUS "Resolving fff dependency...")
+FetchContent_Declare(
+  fff
+  GIT_REPOSITORY https://github.com/meekrosoft/fff.git
+  GIT_TAG master
 )
 
-message(STATUS "Linking libary to dependencies...")
-target_link_libraries(common_drivers PUBLIC bmi08 bmp5 littlefs)
+add_library(common_drivers STATIC)
+if(TARGET stm32cubemx)
+  message(STATUS "Compiling for target host (MCU), linking libraries...")
 
-if(NOT TARGET stm32cubemx)
-  # Empty for now, will add stuff for tests later
-else()
+  add_library(bmi08 STATIC
+    ${bmi08_SOURCE_DIR}/bmi08a.c
+    ${bmi08_SOURCE_DIR}/bmi08g.c
+    ${bmi08_SOURCE_DIR}/bmi08xa.c
+    ${bmi08_SOURCE_DIR}/bmi088_mma.c
+    ${bmi08_SOURCE_DIR}/bmi088_anymotiona.c
+  )
+  target_include_directories(bmi08 PUBLIC ${bmi08_SOURCE_DIR})
+
+  add_library(bmp5 STATIC ${bmp5_SOURCE_DIR}/bmp5.c)
+  target_include_directories(bmp5 PUBLIC ${bmp5_SOURCE_DIR})
+
+  add_library(littlefs STATIC
+    ${littlefs_SOURCE_DIR}/lfs.c
+    ${littlefs_SOURCE_DIR}/lfs_util.c
+  )
+  target_include_directories(littlefs PUBLIC ${littlefs_SOURCE_DIR})
+
+  message(STATUS "Linking dependencies to library...")
+  target_link_libraries(common_drivers PUBLIC bmi08 bmp5 littlefs)
+
   message(STATUS "Linking stm32 drivers to library....")
   target_link_libraries(common_drivers PUBLIC stm32cubemx)
+else()
+  enable_testing()
+  message(STATUS "Compiling for tests, linking gtest, fff, and mocks to library...")
+  FetchContent_MakeAvailable(googletest)
+  FetchContent_MakeAvailable(fff)
+
+  add_library(bmp5 INTERFACE)
+  target_include_directories(bmp5 INTERFACE ${bmp5_SOURCE_DIR})
+
+  add_library(littlefs INTERFACE)
+  target_include_directories(littlefs INTERFACE ${littlefs_SOURCE_DIR})
+
+  add_library(bmi08 INTERFACE)
+  target_include_directories(bmi08 INTERFACE ${bmi08_SOURCE_DIR})
+
+  message(STATUS "Linking mock dependencies to library...")
+  target_link_libraries(common_drivers PUBLIC bmp5 littlefs bmi08)
+
+  message(STATUS "Creating tests for library...")
+  add_compile_definitions(TEST)
+  add_subdirectory(tests)
 endif()
+
+message(STATUS "Adding source files and headers to library...")
+add_subdirectory(include)
+add_subdirectory(src)
+
+add_custom_target(coverage 
+  COMMAND mkdir -p coverage
+  COMMAND gcovr -r ${CMAKE_SOURCE_DIR} -e "${CMAKE_SOURCE_DIR}/tests/" -e "${CMAKE_BINARY_DIR}/" --html-details -o coverage/index.html .
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)

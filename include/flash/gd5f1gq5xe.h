@@ -2,11 +2,21 @@
 #define GD5F1GQ5XE_H
 
 #include "flash.h"
-#include "defs.h"
+#include "hal.h"
+#include "protocol.h"
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
-bool gd5f1gq5xe_init(struct flash *flash, struct handle_spi *spi);
+namespace Platform {
+class GD5F1GQ5XE final : public Flash {
+private:
+    Protocol& protocol;
+
+public:
+    GD5F1GQ5XE(Protocol& protocol_);
+    bool init() override;
+};
+} // namespace Platform
 
 #endif

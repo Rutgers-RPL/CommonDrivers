@@ -1,20 +1,27 @@
-#ifndef BMP581_H
-#define BMP581_H
+#ifndef SENSORS_BMP581_H
+#define SENSORS_BMP581_H
 
-#include "defs.h"
-#include "sensor.h"
 #include "bmp5_defs.h"
+#include "protocol.h"
+#include "sensor.h"
 
-#include <stdint.h>
+#include <cassert>
 
-struct bmp581_ctx {
-	struct bmp5_dev dev;
-	struct bmp5_osr_odr_press_config odr_config;
-	struct bmp5_int_source_select int_config;
-	struct handle handle;
+namespace Platform {
+class BMP581 final : public Sensor {
+private:
+    struct bmp5_dev dev;
+    struct bmp5_osr_odr_press_config odr_config;
+    struct bmp5_int_source_select int_config;
+    struct Protocol& api;
+
+public:
+    BMP581(Protocol& api_) : api(api_) {
+        assert(api.type() == ProtocolType::SPI);
+    };
+    bool init() override;
+    bool read(Packet& packet) override;
 };
-
-int8_t bmp581_init(struct bmp581_ctx *ctx, struct sensor *sensor);
-int8_t bmp581_get_power_mode(struct bmp581_ctx *ctx, enum bmp5_powermode *powermode);
+} // namespace Platform
 
 #endif

@@ -8,7 +8,7 @@ To write a sensor, you must initialize a struct of the form
 
 ```c
 struct sensor { 
-  bool (*read)(void*, struct packet*);
+  bool (*read)(void*, Packet*);
   void* ctx;
 };
 ```

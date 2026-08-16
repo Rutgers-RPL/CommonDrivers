@@ -1,0 +1,14 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+
+AccessModifierOffset: -4
+Language: Cpp
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: false
