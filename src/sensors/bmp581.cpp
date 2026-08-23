@@ -1,6 +1,7 @@
 #include "bmp581.h"
 
 #include "hal.h"
+#include "log.h"
 #include "protocol.h"
 #include "sensor.h"
 
@@ -10,6 +11,8 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+
+#include "usbd_cdc_if.h"
 
 constexpr auto GRAVITY_ACCEL = 9.80665f;    // m/s^2
 constexpr auto AIR_MOLAR_MASS = 0.0289644f; // kg/mol
@@ -103,19 +106,25 @@ bool BMP581::init() {
     int_config.fifo_thres_en = BMP5_DISABLE;
     int_config.oor_press_en = BMP5_DISABLE;
 
-    bmp5_soft_reset(&dev);
+    result = bmp5_soft_reset(&dev);
+    log("BMP581 reset returned %d\r\n", result);
+    if (result != BMP5_OK)
+        return false;
 
     // Initialize the device
     result = bmp5_init(&dev);
+    log("BMP581 init returned %d\r\n", result);
     if (result != BMP5_OK)
         return false;
 
     // Set odr frequency
     result = bmp5_set_osr_odr_press_config(&odr_config, &dev);
+    log("BMP581 odr returned %d\r\n", result);
     if (result != BMP5_OK)
         return false;
 
     result = bmp5_int_source_select(&int_config, &dev);
+    log("BMP581 source returned %d\r\n", result);
     if (result != BMP5_OK)
         return false;
 
@@ -123,10 +132,12 @@ bool BMP581::init() {
     result =
         bmp5_configure_interrupt(BMP5_PULSED, BMP5_ACTIVE_HIGH,
                                  BMP5_INTR_PUSH_PULL, BMP5_INTR_ENABLE, &dev);
+    log("BMP581 interrupt returned %d\r\n", result);
     if (result != BMP5_OK)
         return false;
 
     result = bmp5_set_power_mode(BMP5_POWERMODE_NORMAL, &dev);
+    log("BMP581 power returned %d\r\n", result);
     if (result != BMP5_OK)
         return false;
 

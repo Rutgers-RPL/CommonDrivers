@@ -5,6 +5,7 @@
  *      Author: Dhruv Shah
  */
 
+#include "log.h"
 #include "hal.h"
 #include "protocol.h"
 #include "sensor.h"
@@ -105,46 +106,57 @@ bool BMI088::init() {
     int8_t ret = BMI08_OK;
 
     ret = bmi08a_soft_reset(&dev);
+    log("BMI088a soft reset returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08xa_init(&dev);
+    log("BMI088a init returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08a_load_config_file(&dev);
+    log("BMI088a load returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08a_set_power_mode(&dev);
+    log("BMI088a power returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08xa_set_meas_conf(&dev);
+    log("BMI088a meas returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08a_set_int_config(&accel_new_data_int_cfg, &dev);
+    log("BMI088a interrupt returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08g_soft_reset(&dev);
+    log("BMI088g reset returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08g_init(&dev);
+    log("BMI088g init returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08g_set_power_mode(&dev);
+    log("BMI088g power returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08g_set_meas_conf(&dev);
+    log("BMI088g meas returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
     ret = bmi08g_set_int_config(&gyro_new_data_int_cfg, &dev);
+    log("BMI088g interrupt returned %d\r\n", ret);
     if (ret != BMI08_OK)
         return false;
 
