@@ -54,6 +54,56 @@ add_library(common_drivers STATIC)
 if(TARGET stm32cubemx)
   message(STATUS "Compiling for target host (MCU), linking libraries...")
 
+  if(NOT TARGET STM32_Drivers)
+    message(FATAL_ERROR "STM32_Drivers source was not added, something is wrong!")
+  endif()
+  get_target_property(STM32_Drivers_Src STM32_Drivers SOURCES)
+
+  # Autodetect series
+  # STM32 includes a file of the form (depending on the series)
+  #   ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/system_stm32f4xx.c
+  # to sources, which we can use regex detection to get the series
+  string(REGEX MATCH "stm32([a-z0-9]+)\\.c" FOUND_MATCH "${STM32_Drivers_Src}")
+  if(FOUND_MATCH)
+    # We then can use use this `HAL_STM32_SERIES` in
+    # hal.h to automatically include the right hal file.
+    message(STATUS "Detected " ${CMAKE_MATCH_1} " series...")
+    target_compile_definitions(common_drivers PUBLIC HAL_STM32_SERIES=${CMAKE_MATCH_1})
+  else()
+    message(FATAL_ERROR "Unable to autodetect STM32 series!")
+  endif()
+
+  # Autodetect perhipherals
+  # What this basically does is conditionally include the i2c, qspi, spi, and uart
+  # files if and only if they are enabled in cubemx. 
+  #
+  # When cubemx enables the perhipherals, it adds something like this
+  #   ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
+  # to STM32_Drivers_Src. Therefore we can just iterate through it and find if the
+  # given drivers exist, and if they do, we can safely include our thin HAL abstraction
+  # for the driver.
+  set(PATTERNS
+    "_hal_i2c\\.c"
+    "_hal_qspi\\.c"
+    "_hal_spi\\.c"
+    "_hal_uart\\.c"
+  )
+  set(DEFINES
+    I2C
+    QSPI
+    SPI
+    UART
+  )
+
+  foreach(PATTERN DEFINE IN ZIP_LISTS PATTERNS DEFINES)
+    string(REGEX MATCH "${PATTERN}" FOUND_MATCH "${STM32_Drivers_Src}")
+    if(FOUND_MATCH)
+      message(STATUS "Adding " ${DEFINE} " to build...")
+      set_property(GLOBAL APPEND PROPERTY PERHIPHERALS "${DEFINE}")
+    endif()
+  endforeach()
+
+  # Add libaries
   add_library(bmi08 STATIC
     ${bmi08_SOURCE_DIR}/bmi08a.c
     ${bmi08_SOURCE_DIR}/bmi08g.c
