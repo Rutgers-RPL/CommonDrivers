@@ -7,7 +7,7 @@
 
 #include <cassert>
 
-namespace Platform {
+namespace Common {
 class BMP581 final : public Sensor {
 private:
     struct bmp5_dev dev;
@@ -22,6 +22,6 @@ public:
     bool init() override;
     bool read(Packet& packet) override;
 };
-} // namespace Platform
+} // namespace Common
 
 #endif

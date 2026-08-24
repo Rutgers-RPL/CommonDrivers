@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-namespace Platform {
+namespace Common {
 class GD5F1GQ5XE final : public Flash {
 private:
     Protocol& protocol;
@@ -17,6 +17,6 @@ public:
     GD5F1GQ5XE(Protocol& protocol_);
     bool init() override;
 };
-} // namespace Platform
+} // namespace Common
 
 #endif

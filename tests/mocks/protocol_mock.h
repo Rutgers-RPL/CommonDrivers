@@ -2,7 +2,7 @@
 
 #include <gmock/gmock.h>
 
-namespace Platform {
+namespace Common {
 class MockProtocol : public Protocol {
 public:
     explicit MockProtocol(ProtocolType type) : Protocol(type) {}
@@ -14,4 +14,4 @@ public:
     MOCK_METHOD(bool, readDMA, (Span buffer), (override));
     MOCK_METHOD(bool, configure, (Config config), (override));
 };
-} // namespace Platform
+} // namespace Common

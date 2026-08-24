@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-namespace Platform {
+namespace Common {
 struct __attribute__((packed)) Packet {
     int16_t magic = 0xBEEF;      // 2 bytes
     uint32_t status = 0;         // 4 bytes
@@ -51,6 +51,6 @@ public:
     virtual bool read(Packet& packet) = 0;
     virtual bool init() = 0;
 };
-} // namespace Platform
+} // namespace Common
 
 #endif // SENSORS_SENSOR_H

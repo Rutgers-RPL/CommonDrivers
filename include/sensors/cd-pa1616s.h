@@ -14,7 +14,7 @@
 #include <cassert>
 #include <stdint.h>
 
-namespace Platform {
+namespace Common {
 class GPS final : public Sensor {
 private:
     // used for DMA reception buffer
@@ -28,6 +28,6 @@ public:
     bool init() override;
     bool read(Packet& packet) override;
 };
-} // namespace Platform
+} // namespace Common
 
 #endif /* INC_CD_PA1616S_H_ */

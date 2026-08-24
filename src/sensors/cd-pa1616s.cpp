@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace Platform {
+namespace Common {
 bool GPS::init() {
     static constexpr uint8_t command[] =
         "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
@@ -145,4 +145,4 @@ bool GPS::read(Packet& packet) {
     packet.gps_hMSL_m = alt;
     return true;
 }
-} // namespace Platform
+} // namespace Common

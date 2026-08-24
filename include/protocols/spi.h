@@ -22,7 +22,7 @@
 ///
 /// The 0x00 is eight bytes of dummy. SPI will just send it as is and everything
 /// should work well.
-namespace Platform {
+namespace Common {
 class SPI final : public Protocol {
 private:
     SPI_HandleTypeDef* handle;
@@ -36,6 +36,6 @@ public:
     bool read(ConstSpan cmd, Span buffer, AddressSize size) override;
     bool write(ConstSpan cmd, ConstSpan buffer, AddressSize size) override;
 };
-} // namespace Platform
+} // namespace Common
 
 #endif

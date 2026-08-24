@@ -1,8 +1,8 @@
 #ifndef LOG_H
 #define LOG_H
 
-namespace Platform {
+namespace Common {
     void LOG(const char* fmt, ...);
-} // namespace Platform
+} // namespace Common
 
 #endif

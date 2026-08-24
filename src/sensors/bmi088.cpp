@@ -25,18 +25,18 @@
 namespace {
 BMI08_INTF_RET_TYPE bosch_read(uint8_t reg_addr, uint8_t* reg_data,
                                uint32_t length, void* intf_ptr) {
-    auto* protocol = static_cast<Platform::Protocol*>(intf_ptr);
-    return protocol->read(Platform::ConstSpan(&reg_addr, 1),
-                          Platform::Span(reg_data, length),
-                          Platform::AddressSize::Byte);
+    auto* protocol = static_cast<Common::Protocol*>(intf_ptr);
+    return protocol->read(Common::ConstSpan(&reg_addr, 1),
+                          Common::Span(reg_data, length),
+                          Common::AddressSize::Byte);
 }
 
 BMI08_INTF_RET_TYPE bosch_write(uint8_t reg_addr, const uint8_t* reg_data,
                                 uint32_t length, void* intf_ptr) {
-    auto* protocol = static_cast<Platform::Protocol*>(intf_ptr);
-    return protocol->write(Platform::ConstSpan(&reg_addr, 1),
-                           Platform::ConstSpan(reg_data, length),
-                           Platform::AddressSize::Byte);
+    auto* protocol = static_cast<Common::Protocol*>(intf_ptr);
+    return protocol->write(Common::ConstSpan(&reg_addr, 1),
+                           Common::ConstSpan(reg_data, length),
+                           Common::AddressSize::Byte);
 }
 
 void bosch_delay(uint32_t period, void* intf_ptr) {
@@ -67,7 +67,7 @@ float bmi088_convert_gyro_axis_data(struct bmi08_dev& dev, int16_t axis_data) {
 }
 } // namespace
 
-namespace Platform {
+namespace Common {
 bool BMI088::init() {
     struct bmi08_accel_int_channel_cfg accel_new_data_int_cfg;
     struct bmi08_gyro_int_channel_cfg gyro_new_data_int_cfg;
@@ -185,4 +185,4 @@ bool BMI088::read(Packet& packet) {
         bmi088_convert_gyro_axis_data(dev, gyro_data.z);
     return true;
 }
-} // namespace Platform
+} // namespace Common

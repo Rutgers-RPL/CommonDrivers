@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstdio>
 
-namespace Platform {
+namespace Common {
 #if defined(TEST) || defined(RELEASE)
 // TODO: I think the static strings are not compiled out, need to investigate
 void LOG(const char* fmt, ...) {}
@@ -34,4 +34,4 @@ void LOG(const char* fmt, ...) {
 #endif // end USE_CDC_DEBUG
 }
 #endif // end defined(TEST) || defined(RELEASE)
-} // namespace Platform
+} // namespace Common

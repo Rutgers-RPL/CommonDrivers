@@ -22,7 +22,7 @@
 /// byte mode yet. Sometimes you can only recieve data over a single line, so
 /// a method is provided in order to configure the dataMode, usually at startup
 /// only. You can do so using `configure` method with the appropriate `Config`.
-namespace Platform {
+namespace Common {
 class QSPI final : public Protocol {
 private:
     QSPI_HandleTypeDef* handle;
@@ -52,6 +52,6 @@ public:
         return true;
     };
 };
-} // namespace Platform
+} // namespace Common
 
 #endif

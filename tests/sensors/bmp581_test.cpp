@@ -54,7 +54,7 @@ auto mock_sensor_data(float pressure, float temp) {
 // Select lapse-rate model and enter your mock pressure. For tests,
 // we make the assumption of standard sea level conditions, ie
 // pressure at 101325 Pa and temperature of around 15 celcius.
-namespace Platform {
+namespace Common {
 class BMP581Test : public testing::Test {
   protected:
     MockProtocol protocol = MockProtocol(ProtocolType::SPI);
@@ -132,4 +132,4 @@ TEST_F(BMP581Test, ShouldReadUpperStratosphereCorrectly) {
     EXPECT_FLOAT_EQ(fake_pressure, packet.kf_position_m);
     EXPECT_NEAR(expected_alt, packet.barometer_hMSL_m, 1);
 }
-} // namespace Platform
+} // namespace Common

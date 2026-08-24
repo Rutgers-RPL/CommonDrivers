@@ -42,7 +42,7 @@ constexpr uint32_t GD5F_BLOCK_SIZE = GD5F_PAGES_PER_BLOCK * GD5F_PAGE_SIZE;
 // Note that this flash has a page size of 2048, so we actually only need 11
 // bytes for the column address.
 namespace {
-using namespace Platform;
+using namespace Common;
 
 /// Generally needed when you want to write to the flash using execute
 int write_enable(Protocol* protocol) {
@@ -218,7 +218,7 @@ int lfs_erase(const struct lfs_config* c, lfs_block_t block) {
 int lfs_sync(const struct lfs_config* c) { return LFS_ERR_OK; }
 } // namespace
 
-namespace Platform {
+namespace Common {
 GD5F1GQ5XE::GD5F1GQ5XE(Protocol& protocol_) : protocol(protocol_) {
     assert(protocol.type() == ProtocolType::SPI ||
            protocol.type() == ProtocolType::QSPI);
@@ -266,4 +266,4 @@ bool GD5F1GQ5XE::init() {
     LOG("Flash init finished!");
     return true;
 }
-} // namespace Platform
+} // namespace Common

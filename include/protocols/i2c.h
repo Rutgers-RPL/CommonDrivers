@@ -13,7 +13,7 @@
 /// to prefer the pattern of specifying an address to target, followed
 /// by a write or read. The `mem` I2C functions do this in one step instead
 /// of two. This contrasts with SPI where we are forced to do it in two.
-namespace Platform {
+namespace Common {
 class I2C final : public Protocol {
 private:
     I2C_HandleTypeDef* handle;
@@ -25,6 +25,6 @@ public:
     bool read(ConstSpan cmd, Span buffer, AddressSize size) override;
     bool write(ConstSpan cmd, ConstSpan buffer, AddressSize size) override;
 };
-} // namespace Platform
+} // namespace Common
 
 #endif

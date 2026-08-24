@@ -3,17 +3,17 @@
 #include <cstdint>
 
 namespace {
-uint32_t get_address_size(Platform::AddressSize size) {
+uint32_t get_address_size(Common::AddressSize size) {
     switch (size) {
-    case Platform::AddressSize::Byte:
+    case Common::AddressSize::Byte:
         return QSPI_ADDRESS_8_BITS;
-    case Platform::AddressSize::Byte2:
+    case Common::AddressSize::Byte2:
         return QSPI_ADDRESS_16_BITS;
-    case Platform::AddressSize::Byte3:
+    case Common::AddressSize::Byte3:
         return QSPI_ADDRESS_24_BITS;
-    case Platform::AddressSize::Byte4:
+    case Common::AddressSize::Byte4:
         return QSPI_ADDRESS_32_BITS;
-    case Platform::AddressSize::None:
+    case Common::AddressSize::None:
         return QSPI_ADDRESS_NONE;
     }
 }
@@ -29,7 +29,7 @@ uint32_t dummycycle_per_byte(uint32_t datalines) {
     }
 }
 
-uint32_t get_address(Platform::ConstSpan cmd, Platform::AddressSize size) {
+uint32_t get_address(Common::ConstSpan cmd, Common::AddressSize size) {
     auto numbytes = static_cast<std::size_t>(size);
     uint32_t address = 0;
     assert(cmd.size() > numbytes && "You misconfigured your address size");
@@ -38,7 +38,7 @@ uint32_t get_address(Platform::ConstSpan cmd, Platform::AddressSize size) {
     return address;
 }
 
-void configure_cmd(Platform::ConstSpan cmd, Platform::AddressSize size,
+void configure_cmd(Common::ConstSpan cmd, Common::AddressSize size,
                    QSPI_CommandTypeDef& qcmd) {
     // Configure instruction and address
     qcmd.Instruction = cmd[0];
@@ -72,7 +72,7 @@ void configure_cmd(Platform::ConstSpan cmd, Platform::AddressSize size,
 }
 } // namespace
 
-namespace Platform {
+namespace Common {
 bool QSPI::read(ConstSpan cmd, Span buffer, AddressSize size) {
     QSPI_CommandTypeDef qcmd;
     configure_cmd(cmd, size, qcmd);
@@ -95,4 +95,4 @@ bool QSPI::write(ConstSpan cmd, ConstSpan buffer, AddressSize size) {
         return HAL_QSPI_Transmit(handle, buffer.data(), HAL_MAX_DELAY);
     return res;
 }
-} // namespace Platform
+} // namespace Common

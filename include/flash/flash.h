@@ -22,7 +22,7 @@
 /// Then you must call `mount` to mount the filesystem. Only after that may you
 /// use other functions like `bootcount` or `append`. It is a good idea to call
 /// `unmount` when you no longer need to write the the flash.
-namespace Platform {
+namespace Common {
 class Flash {
 protected:
     struct lfs_config config;
@@ -75,6 +75,6 @@ public:
     /// @return true on success, false on error
     bool append(lfs_file_t* file, const uint8_t* bytes, size_t size);
 };
-} // namespace Platform
+} // namespace Common
 
 #endif

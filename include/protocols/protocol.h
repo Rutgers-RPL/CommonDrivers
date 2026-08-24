@@ -34,7 +34,7 @@
 /// implementation actually has commands baked into its core. The complex
 /// devices tend to require dummy cycles. You should specify dummy cycles using
 /// empty bytes `0x00`, look at the spreadsheets to see how many you need.
-namespace Platform {
+namespace Common {
 
 /// Span ---
 /// A quick primer on span, it just a regular C buffer but it also
@@ -138,6 +138,6 @@ public:
     /// @return protocol type
     ProtocolType type() const { return ptype; }
 };
-} // namespace Platform
+} // namespace Common
 
 #endif // PROTOCOLS_PROTOCOL_H

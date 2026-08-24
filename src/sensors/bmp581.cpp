@@ -69,18 +69,18 @@ inline float bmp581_estimate_altitude_msl(struct bmp5_sensor_data* data) {
 
 BMP5_INTF_RET_TYPE bosch_read(uint8_t reg_addr, uint8_t* reg_data,
                               uint32_t length, void* intf_ptr) {
-    auto* protocol = static_cast<Platform::Protocol*>(intf_ptr);
-    return protocol->read(Platform::ConstSpan(&reg_addr, 1),
-                          Platform::Span(reg_data, length),
-                          Platform::AddressSize::Byte);
+    auto* protocol = static_cast<Common::Protocol*>(intf_ptr);
+    return protocol->read(Common::ConstSpan(&reg_addr, 1),
+                          Common::Span(reg_data, length),
+                          Common::AddressSize::Byte);
 }
 
 BMP5_INTF_RET_TYPE bosch_write(uint8_t reg_addr, const uint8_t* reg_data,
                                uint32_t length, void* intf_ptr) {
-    auto* protocol = static_cast<Platform::Protocol*>(intf_ptr);
-    return protocol->write(Platform::ConstSpan(&reg_addr, 1),
-                           Platform::ConstSpan(reg_data, length),
-                           Platform::AddressSize::Byte);
+    auto* protocol = static_cast<Common::Protocol*>(intf_ptr);
+    return protocol->write(Common::ConstSpan(&reg_addr, 1),
+                           Common::ConstSpan(reg_data, length),
+                           Common::AddressSize::Byte);
 }
 
 void bosch_delay(uint32_t period, void* intf_ptr) {
@@ -88,7 +88,7 @@ void bosch_delay(uint32_t period, void* intf_ptr) {
 }
 } // namespace
 
-namespace Platform {
+namespace Common {
 bool BMP581::init() {
     int8_t result = BMP5_OK;
     dev.intf_ptr = &api;
@@ -151,4 +151,4 @@ bool BMP581::read(Packet& packet) {
     packet.kf_position_m = data.pressure;
     return true;
 }
-} // namespace Platform
+} // namespace Common

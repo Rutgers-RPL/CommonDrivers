@@ -17,7 +17,7 @@ struct Guard {
 };
 } // namespace
 
-namespace Platform {
+namespace Common {
 bool SPI::read(ConstSpan cmd, Span buffer, AddressSize size) {
     assert(!cmd.empty() && "Command buffer should not be empty");
     Guard cs = Guard(port, pin);
@@ -38,4 +38,4 @@ bool SPI::write(ConstSpan cmd, ConstSpan buffer, AddressSize size) {
                                 HAL_MAX_DELAY);
     return res;
 }
-} // namespace Platform
+} // namespace Common

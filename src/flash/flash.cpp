@@ -29,7 +29,7 @@ inline uint32_t offset(uint32_t filesize, uint32_t blocksize) {
 }
 } // namespace
 
-namespace Platform {
+namespace Common {
 uint32_t Flash::mount() {
     int err = lfs_mount(&lfs, &config);
     if (err) {
@@ -89,7 +89,7 @@ bool Flash::append(lfs_file_t* file, const uint8_t* bytes, size_t size) {
         if (res != write_size)
             return false;
 
-        Platform::LOG("Flash wrote %u\r\n", res);
+        Common::LOG("Flash wrote %u\r\n", res);
 
         size -= res;
         filesize += res;
@@ -98,4 +98,4 @@ bool Flash::append(lfs_file_t* file, const uint8_t* bytes, size_t size) {
     }
     return true;
 }
-} // namespace Platform
+} // namespace Common

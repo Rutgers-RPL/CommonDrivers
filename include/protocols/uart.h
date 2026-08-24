@@ -9,7 +9,7 @@
 /// commands, this current implementation just writes and reads directly,
 /// with no intermediate step. The `cmd` buffer is ignored, just write
 /// using the buffer.
-namespace Platform {
+namespace Common {
 class UART final : public Protocol {
 private:
     UART_HandleTypeDef* handle;
@@ -21,6 +21,6 @@ public:
     bool write(ConstSpan cmd, ConstSpan buffer, AddressSize size) override;
     bool readDMA(Span buffer) override;
 };
-} // namespace Platform
+} // namespace Common
 
 #endif

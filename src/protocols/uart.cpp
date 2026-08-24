@@ -1,6 +1,6 @@
 #include "uart.h"
 
-namespace Platform {
+namespace Common {
 bool UART::read(ConstSpan cmd, Span buffer, AddressSize size) {
     assert(cmd.empty() && "Just read using the buffer");
     return HAL_UART_Receive(handle, buffer.data(), buffer.size(),
@@ -16,4 +16,4 @@ bool UART::write(ConstSpan cmd, ConstSpan buffer, AddressSize size) {
 bool UART::readDMA(Span buffer) {
     return HAL_UARTEx_ReceiveToIdle_DMA(handle, buffer.data(), buffer.size());
 }
-} // namespace Platform
+} // namespace Common
