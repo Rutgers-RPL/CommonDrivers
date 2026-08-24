@@ -82,14 +82,14 @@ bool Flash::append(lfs_file_t* file, const uint8_t* bytes, size_t size) {
             // Due to constraints, the size is guaranteed to be less
             // than a block size, so we can just safely do this
             write_size = size;
-            log("Flash synced", size);
+            LOG("Flash synced", size);
         }
 
         uint32_t res = lfs_file_write(&lfs, file, buf, write_size);
         if (res != write_size)
             return false;
 
-        Platform::log("Flash wrote %u\r\n", res);
+        Platform::LOG("Flash wrote %u\r\n", res);
 
         size -= res;
         filesize += res;

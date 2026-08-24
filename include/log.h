@@ -2,7 +2,7 @@
 #define LOG_H
 
 namespace Platform {
-    void log(const char* fmt, ...);
+    void LOG(const char* fmt, ...);
 } // namespace Platform
 
 #endif

@@ -1,7 +1,7 @@
 #include "gd5f1gq5xe.h"
 
-#include "log.h"
 #include "hal.h"
+#include "log.h"
 #include "protocol.h"
 
 // Flash Commands
@@ -263,7 +263,7 @@ bool GD5F1GQ5XE::init() {
         protocol.configure(Config::QSPI_Data4);
     }
 
-    log("Flash init finished!");
+    LOG("Flash init finished!");
     return true;
 }
 } // namespace Platform
