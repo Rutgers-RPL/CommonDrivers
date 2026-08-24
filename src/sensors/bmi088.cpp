@@ -40,7 +40,7 @@ BMI08_INTF_RET_TYPE bosch_write(uint8_t reg_addr, const uint8_t* reg_data,
 }
 
 void bosch_delay(uint32_t period, void* intf_ptr) {
-    HAL_Delay(ceil(static_cast<double>(period) / (1000.0)));
+    Delay(ceil(static_cast<double>(period) / (1000.0)));
 }
 
 float bmi088_convert_accel_axis_data(struct bmi08_dev& dev, int16_t axis_data) {

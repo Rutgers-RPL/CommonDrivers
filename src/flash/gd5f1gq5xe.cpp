@@ -74,7 +74,7 @@ uint32_t read_page(Protocol* protocol, const uint32_t block,
         (addr & 0x0000FF)          // third byte
     };
     protocol->write(ConstSpan(cmd1), {}, AddressSize::Byte3);
-    HAL_Delay(2);  // maximum delay for reading to cache
+    Delay(2);  // maximum delay for reading to cache
 
     // We can then use the column address to read offsets into the page
     uint16_t col = offset % GD5F_PAGE_SIZE;
@@ -138,7 +138,7 @@ uint32_t write_page(Protocol* protocol, const uint32_t block,
         (addr & 0x0000FF)        // to fill a page, and execute to write it
     };
     protocol->write(ConstSpan(cmd2), {}, AddressSize::Byte3);
-    HAL_Delay(1); // maximum delay required for executing
+    Delay(1); // maximum delay required for executing
 
     return write_size;
 }
@@ -187,7 +187,7 @@ bool erase(Protocol* protocol, uint32_t block) {
         (addr & 0x0000FF)         // it operates on whiole blocks
     };
     protocol->write(ConstSpan(cmd), {}, AddressSize::Byte3);
-    HAL_Delay(12); // maximum delay required for erases
+    Delay(12); // maximum delay required for erases
     return true;
 }
 
@@ -253,7 +253,7 @@ bool GD5F1GQ5XE::init() {
         return false;
     uint8_t cmd2[] = {GD5F_SET_FEATURE, 0xA0, 0x00};
     protocol.write(ConstSpan(cmd2), {}, AddressSize::Byte2);
-    HAL_Delay(5000);
+    Delay(5000);
 
     if (protocol.type() == ProtocolType::QSPI) {
         // Enable QE feature so we can quad reads and writes

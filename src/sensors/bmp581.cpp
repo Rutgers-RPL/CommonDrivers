@@ -86,7 +86,7 @@ BMP5_INTF_RET_TYPE bosch_write(uint8_t reg_addr, const uint8_t* reg_data,
 }
 
 void bosch_delay(uint32_t period, void* intf_ptr) {
-    HAL_Delay(ceil((double)(period) / (1000.0)));
+    Delay(ceil((double)(period) / (1000.0)));
 }
 } // namespace
 

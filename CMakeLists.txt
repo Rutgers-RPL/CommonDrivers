@@ -68,9 +68,18 @@ if(TARGET stm32cubemx)
     # We then can use use this `HAL_STM32_SERIES` in
     # hal.h to automatically include the right hal file.
     message(STATUS "Detected " ${CMAKE_MATCH_1} " series...")
-    target_compile_definitions(common_drivers PUBLIC HAL_STM32_SERIES=${CMAKE_MATCH_1})
+    target_compile_definitions(common_drivers PUBLIC PLATFORM_STM32_SERIES=${CMAKE_MATCH_1})
   else()
     message(FATAL_ERROR "Unable to autodetect STM32 series!")
+  endif()
+
+  # Autodetect RTOS
+  # Note that STM32's HAL files do have a USE_RTOS definition. However relying
+  # on it is not a good idea because it is not specified for public
+  # use. Therefore we use our own detection and compile definition here
+  if(TARGET FreeRTOS)
+    message(STATUS "Detected FreeRTOS...")
+    target_compile_definitions(common_drivers PUBLIC PLATFORM_USE_RTOS)
   endif()
 
   # Autodetect perhipherals
@@ -94,7 +103,6 @@ if(TARGET stm32cubemx)
     SPI
     UART
   )
-
   foreach(PATTERN DEFINE IN ZIP_LISTS PATTERNS DEFINES)
     string(REGEX MATCH "${PATTERN}" FOUND_MATCH "${STM32_Drivers_Src}")
     if(FOUND_MATCH)
@@ -146,7 +154,7 @@ else()
   target_link_libraries(common_drivers PUBLIC bmp5 littlefs bmi08)
 
   message(STATUS "Creating tests for library...")
-  add_compile_definitions(TEST)
+  target_compile_definitions(common_drivers PUBLIC TEST)
   add_subdirectory(tests)
 endif()
 

@@ -1,8 +1,8 @@
 #include "log.h"
 
-#ifdef USE_SWO_DEBUG
 #include "hal.h"
-#else
+
+#ifndef USE_SWO_DEBUG
 #include "usbd_cdc_if.h"
 #endif
 
@@ -27,7 +27,7 @@ void log(const char* fmt, ...) {
         ITM_SendChar(buf[i]);
 #else
     while (CDC_Transmit_FS(reinterpret_cast<uint8_t*>(buf), len) == USBD_BUSY)
-        HAL_Delay(1);
+        Delay(1);
 #endif
 }
 } // namespace Platform
