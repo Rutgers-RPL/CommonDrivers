@@ -1,0 +1,7 @@
+get_property(perhipherals GLOBAL PROPERTY PERHIPHERALS)
+foreach(peripheral IN LISTS perhipherals)
+  string(TOLOWER "${peripheral}" file)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${file}.cpp")
+    target_sources(common_drivers PRIVATE "${file}.cpp")
+  endif()
+endforeach()

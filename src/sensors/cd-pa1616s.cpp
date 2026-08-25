@@ -5,34 +5,39 @@
  *      Author: Mahir Shah
  */
 
-#include "CD-PA1616S.h"
-
-#include "sensor.h"
-#include "defs.h"
+#include "cd-pa1616s.h"
+#include "hal.h"
 
 #include <assert.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+namespace Common {
+bool GPS::init() {
+    static constexpr uint8_t command[] =
+        "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
+    // Initialize GPS DMA Reception
+    if (!protocol.write({}, ConstSpan(command), AddressSize::None))
+        return false;
+    if (!protocol.readDMA(Span(buffer)))
+        return false;
+    return true;
+}
 
 //  ParseGPSData: Single function to find and parse $GNGGA / $GPGGA
 //    Returns 1 if successful, 0 otherwise
-STATIC bool gps_read(void *context, struct packet *packet)
-{
-    struct gps_ctx *ctx = (struct gps_ctx*) context;
-    char *buffer = (char*) ctx->buffer;
-
+bool GPS::read(Packet& packet) {
     // Search manually for either "$GNGGA" or "$GPGGA" in buffer
-    const char *gga_start = NULL;
+    const uint8_t* gga_start = NULL;
     for (int i = 0; buffer[i] != '\0'; i++) {
         if (buffer[i] == '$') {
             // Check if we match "$GNGGA" or "$GPGGA"
-            if (strncmp(&buffer[i], "$GNGGA", 6) == 0 ||
-                strncmp(&buffer[i], "$GPGGA", 6) == 0)
-                {
-                    gga_start = &buffer[i];
-                    break;
-                }
+            if (memcmp(&buffer[i], "$GNGGA", 6) == 0 ||
+                memcmp(&buffer[i], "$GPGGA", 6) == 0) {
+                gga_start = &buffer[i];
+                break;
+            }
         }
     }
 
@@ -44,14 +49,11 @@ STATIC bool gps_read(void *context, struct packet *packet)
     //  Copy one line (until CR or LF) into a local buffer
     char line[120];
     int idx = 0;
-    while (gga_start[idx] != '\0' &&
-           gga_start[idx] != '\r' &&
-           gga_start[idx] != '\n' &&
-           idx < (int)sizeof(line) - 1)
-        {
-            line[idx] = gga_start[idx];
-            idx++;
-        }
+    while (gga_start[idx] != '\0' && gga_start[idx] != '\r' &&
+           gga_start[idx] != '\n' && idx < (int)sizeof(line) - 1) {
+        line[idx] = gga_start[idx];
+        idx++;
+    }
     line[idx] = '\0';
 
     // Split into fields by commas. We'll store them in fields[0..].
@@ -62,10 +64,11 @@ STATIC bool gps_read(void *context, struct packet *packet)
 
     for (int j = 0; j < idx; j++) {
         if (line[j] == ',') {
-            fields[fieldIndex][charIndex] = '\0';  // end current field
+            fields[fieldIndex][charIndex] = '\0'; // end current field
             fieldIndex++;
             charIndex = 0;
-            if (fieldIndex >= 20) break;
+            if (fieldIndex >= 20)
+                break;
         } else {
             if (charIndex < 19) {
                 fields[fieldIndex][charIndex++] = line[j];
@@ -135,29 +138,11 @@ STATIC bool gps_read(void *context, struct packet *packet)
     uint8_t sats = (uint8_t)atoi(fields[7]);
     float alt = (fields[9][0] != '\0') ? atof(fields[9]) : 0.0f;
 
-    packet->latitude_degrees = lat;
-    packet->longitude_degrees = lon;
-    packet->gpsFixType = fix;
-    packet->numSatellites = sats;
-    packet->gps_hMSL_m = alt;
+    packet.latitude_degrees = lat;
+    packet.longitude_degrees = lon;
+    packet.gpsFixType = fix;
+    packet.numSatellites = sats;
+    packet.gps_hMSL_m = alt;
     return true;
 }
-
-bool gps_init(struct gps_ctx *ctx, struct sensor *sensor)
-{
-#ifdef HAL_UART_MODULE_ENABLED
-    assert(ctx->handle.def.uart.handle != NULL);
-
-    sensor->ctx = ctx;
-    sensor->read = gps_read;
-
-    // Initialize GPS DMA Reception
-    char command[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\x0d\x0a";
-    HAL_UART_Transmit(ctx->handle.def.uart.handle, (uint8_t*) command, sizeof(command) - 1, HAL_MAX_DELAY);
-    HAL_UARTEx_ReceiveToIdle_DMA(ctx->handle.def.uart.handle, ctx->buffer, BUFFER_SIZE);
-    return true;
-#else
-    assert("UART module is not enabled! CD-PA161 only supports UART!");
-    return false;
-#endif 
-}
+} // namespace Common

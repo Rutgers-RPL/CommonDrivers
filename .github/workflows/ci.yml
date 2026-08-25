@@ -14,28 +14,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Install Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '4.0'
-
-      - name: Install Build Tools and Ceedling
+      - name: Install Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc cmake ninja-build gcovr
-          gem install ceedling
+          sudo apt-get install -y gcc cmake ninja-build
+          pip install gcovr
 
-      - name: Fetch Dependencies
-        run: cmake -B build
+      - name: Configure cmake and run builds
+        run: |
+          cmake -B build -S .
+          cmake --build build
 
-      - name: Run Tests
-        run: ceedling gcov:all
+      - name: Run Tests and create coverage
+        run: |
+          cmake --build build --target test
+          cmake --build build --target coverage
 
-      - name: Upload Coverage
-        uses: actions/upload-artifact@v7
+      - name: Render Coverage Summary in CI
         if: always()
-        with:
-          name: code-coverage-report
-          path: build/ceedling/artifacts/gcov/gcovr/GcovCoverageResults.html
-          archive: false
-          retention-days: 7
+        run: |
+          echo "## Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          gcovr -r . -e "tests/" -e "build/" --markdown >> $GITHUB_STEP_SUMMARY

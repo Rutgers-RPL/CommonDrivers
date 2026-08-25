@@ -5,20 +5,29 @@
  *      Author: Dhruv Shah
  */
 
-#ifndef INC_BMI088_H_
-#define INC_BMI088_H_
+#ifndef SENSORS_BMI088_H
+#define SENSORS_BMI088_H
 
-#include "defs.h"
-#include "sensor.h"
 #include "bmi08_defs.h"
+#include "sensor.h"
 
-#include <stdint.h>
+#include <cassert>
 
-struct bmi088_ctx {
-	struct bmi08_dev dev;
-	struct handle_spi accel_spi;
-	struct handle_spi gyro_spi;
+namespace Common {
+class BMI088 final : public Sensor {
+private:
+    struct bmi08_dev dev;
+    Protocol& accel;
+    Protocol& gyro;
+
+public:
+    BMI088(Protocol& accel_, Protocol& gyro_) : accel{accel_}, gyro{gyro_} {
+        assert(accel.type() == ProtocolType::SPI);
+        assert(gyro.type() == ProtocolType::SPI);
+    }
+    bool init() override;
+    bool read(Packet& packet) override;
 };
-int8_t bmi088_init(struct bmi088_ctx *ctx, struct sensor *sensor);
+} // namespace Common
 
-#endif /* INC_BMI088_H_ */
+#endif
