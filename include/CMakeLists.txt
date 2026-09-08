@@ -4,3 +4,7 @@ target_include_directories(common_drivers PUBLIC
   "protocols"
   "flash"
 )
+
+if(TARGET FreeRTOS)
+  target_include_directories(common_drivers PUBLIC "tasks")
+endif()
