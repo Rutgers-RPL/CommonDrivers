@@ -45,7 +45,6 @@ struct __attribute__((packed)) Packet {
 ///
 /// Both methods must return `true` on success.
 class Sensor {
-protected:
 public:
     virtual ~Sensor() = default;
     virtual bool read(Packet& packet) = 0;
