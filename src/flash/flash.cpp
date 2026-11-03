@@ -3,18 +3,25 @@
 #include "log.h"
 #include "lfs.h"
 
-#include <stdint.h>
+#include <algorithm>
+#include <cstdint>
 
 namespace {
-// See:
-// https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
-// This gives how many bytes are needed before we need to do a fsync. Since we
-// want to sync at the end of a block, this just gives offset from the end.
-//
-// We don't want to sync too often, especially for NAND flashes which have
-// larger block sizes because littlefs does a whole scan and write of the
-// partial block, which is very time-consuming.
-inline uint32_t offset(uint32_t filesize, uint32_t blocksize) {
+/// See:
+/// https://github.com/littlefs-project/littlefs/issues/564#issuecomment-2363032827
+/// This gives how many bytes are needed before we need to do a fsync. Since we
+/// want to sync at the end of a block, this just gives offset from the end.
+///
+/// See also Ardupilot for the formula and logic for syncing:
+/// https://github.com/ArduPilot/ardupilot/blob/13519aaabb8da31ccc54c7c66e7c68ee69c96f2d/libraries/AP_Filesystem/AP_Filesystem_FlashMemory_LittleFS.cpp#L432
+///
+/// We don't want to sync too often, especially for NAND flashes which have
+/// larger block sizes because littlefs does a whole scan and write of the
+/// partial block, which is very time-consuming. The reason for this is that
+/// LFS must transfer the partial block data to a new block if we sync in the
+/// middle of a block.
+/// @return number of bytes left for a sync, or zero for any amount
+inline uint32_t bytes_until_sync(uint32_t filesize, uint32_t blocksize) {
     // Edge case for the first block
     if (filesize < blocksize) {
         return blocksize - filesize;
@@ -69,32 +76,27 @@ uint32_t Flash::open(lfs_file_t* file, const char* filename) {
 
 uint32_t Flash::close(lfs_file_t* file) { return lfs_file_close(&lfs, file); }
 
-bool Flash::append(lfs_file_t* file, const uint8_t* bytes, size_t size) {
+bool Flash::append(lfs_file_t* file, const uint8_t* bytes, uint32_t size) {
     uint8_t* buf = (uint8_t*)bytes;
     uint32_t filesize = lfs_file_size(&lfs, file);
-    uint32_t off = offset(filesize, lfs.cfg->block_size);
 
     while (size > 0) {
-        uint32_t write_size = size < off ? size : off;
-        if (off == 0) {
-            // Time for a new block, sync and just write whatever
+        uint32_t bytes_left = bytes_until_sync(filesize, lfs.cfg->block_size);
+        uint32_t write_size = bytes_left > 0 ? std::min(size, bytes_left) : size;
+        
+        lfs_ssize_t res = lfs_file_write(&lfs, file, buf, write_size);
+        if (res < 0) {
+            LOG("Error: flash write with error code %d", res);
+            return false;
+        }
+        if (write_size == bytes_left) {
             lfs_file_sync(&lfs, file);
-            // Due to constraints, the size is guaranteed to be less
-            // than a block size, so we can just safely do this
-            write_size = size;
             LOG("Flash synced", size);
         }
-
-        uint32_t res = lfs_file_write(&lfs, file, buf, write_size);
-        if (res != write_size)
-            return false;
-
-        Common::LOG("Flash wrote %u\r\n", res);
 
         size -= res;
         filesize += res;
         buf += res;
-        off = offset(filesize, lfs.cfg->block_size);
     }
     return true;
 }
