@@ -18,7 +18,7 @@ public:
         : flash(flash_), packet_file(packet_file_), packet(packet_) {};
 
     void loop() override {
-        registry().subscribe(handle,
+        registry().subscribe(xTaskGetCurrentTaskHandle(),
                              TaskEvent::FlashDisabled | TaskEvent::Telemetry);
         for (;;) {
             // Wait until notified
@@ -32,8 +32,7 @@ public:
                 flash.append(&packet_file, (uint8_t*)&copy, sizeof(copy));
             }
 
-            // Someone notified us to stop task collection, shut the poor flash
-            // down :(
+            // Someone notified us to stop task collection, rip flash :(
             if (event & TaskEvent::FlashDisabled) {
                 flash.close(&packet_file);
                 flash.unmount();

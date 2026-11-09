@@ -91,7 +91,7 @@ public:
 class Registry {
 private:
     struct Subscriber {
-        TaskHandle_t handle;
+        TaskHandle_t handle = nullptr;
         uint32_t mask = 0;
     };
     /// 8 is a good-ish limit, I don't think we will ever hit an amount
@@ -115,9 +115,9 @@ public:
     /// @brief publishes events to all subscribers (non ISR)
     /// @param event  the event bits to publish
     void publish(uint32_t event) {
-        for (auto& subscriber : subscribers) {
-            if (subscriber.handle != nullptr && subscriber.mask & event) {
-                xTaskNotify(subscriber.handle, event, eSetBits);
+        for (size_t i = 0; i < count; ++i) {
+            if (subscribers[i].handle != nullptr && subscribers[i].mask & event) {
+                xTaskNotify(subscribers[i].handle, event, eSetBits);
             }
         }
     }
@@ -142,10 +142,8 @@ public:
 /// registry for inter-task communication. You may use `subscribe` of registry
 /// in order to be notified of certain events
 class Task {
-protected:
-    TaskHandle_t handle;
-
 private:
+    TaskHandle_t handle;
     /// Allows C++ methods to be used in `xTaskCreate`
     /// Do not touch this unless you know what you are doing.
     static void entry(void* args) {

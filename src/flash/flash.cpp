@@ -86,12 +86,12 @@ bool Flash::append(lfs_file_t* file, const uint8_t* bytes, uint32_t size) {
         
         lfs_ssize_t res = lfs_file_write(&lfs, file, buf, write_size);
         if (res < 0) {
-            LOG("Error: flash write with error code %d", res);
+            LOG("[Error] flash write with error code %d\r\n", res);
             return false;
         }
         if (write_size == bytes_left) {
             lfs_file_sync(&lfs, file);
-            LOG("Flash synced", size);
+            LOG("[Info] Flash synced\r\n", size);
         }
 
         size -= res;
