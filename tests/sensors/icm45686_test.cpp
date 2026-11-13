@@ -67,7 +67,6 @@
 // -----------------------------------------------------------------------------
 
 using ::testing::_;        ///< Matches any argument in a mock rule
-using ::testing::Invoke;   ///< Runs custom code when a mock function is called
 using ::testing::NiceMock; ///< Mock wrapper that ignores calls with no rule
 
 namespace Common
@@ -313,14 +312,12 @@ namespace Common
             // Forward every bus read to the simulated sensor.
 
             ON_CALL(bus, read(_, _, _))
-                .WillByDefault(Invoke([this](ConstSpan cmd, Span out, AddressSize)
-                                    { return chip.read(cmd, out); }));
-
-            // Forward every bus write to the simulated sensor.
+                .WillByDefault([this](ConstSpan cmd, Span out, AddressSize)
+                            { return chip.read(cmd, out); });
 
             ON_CALL(bus, write(_, _, _))
-                .WillByDefault(Invoke([this](ConstSpan cmd, ConstSpan data, AddressSize)
-                                    { return chip.write(cmd, data); }));
+                .WillByDefault([this](ConstSpan cmd, ConstSpan data, AddressSize)
+                            { return chip.write(cmd, data); });
         }
     };
 
