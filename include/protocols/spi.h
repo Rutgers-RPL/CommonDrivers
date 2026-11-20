@@ -27,10 +27,10 @@ class SPI final : public Protocol {
 private:
     SPI_HandleTypeDef* handle;
     GPIO_TypeDef* port;
-    uint8_t pin;
+    uint16_t pin;
 
 public:
-    SPI(SPI_HandleTypeDef* handle_, GPIO_TypeDef* port_, uint8_t pin_)
+    SPI(SPI_HandleTypeDef* handle_, GPIO_TypeDef* port_, uint16_t pin_)
         : Protocol{ProtocolType::SPI}, handle{handle_}, port{port_}, pin{pin_} {
     }
     bool read(ConstSpan cmd, Span buffer, AddressSize size) override;
