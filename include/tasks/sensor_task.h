@@ -46,9 +46,10 @@ public:
                 registry().publish(TaskEvent::Telemetry);
             }
             registry().publish(TaskEvent::Staging);
+            
+            // Go to sleep little task...
+            vTaskDelayUntil(&last_wake_up, configTICK_RATE_HZ / hertz);
         }
-        // Go to sleep little task...
-        vTaskDelayUntil(&last_wake_up, configTICK_RATE_HZ / hertz);
     }
 };
 } // namespace Common

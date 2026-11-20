@@ -263,7 +263,7 @@ bool GD5F1GQ5XE::init() {
         protocol.configure(Config::QSPI_Data4);
     }
 
-    LOG("Flash init finished!");
+    LOG("Flash init finished!\n\r");
     return true;
 }
 } // namespace Common

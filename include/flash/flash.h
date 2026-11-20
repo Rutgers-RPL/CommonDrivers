@@ -73,7 +73,7 @@ public:
     /// @param bytes  buffer of bytes to append to the file
     /// @param size   size of the buffer
     /// @return true on success, false on error
-    bool append(lfs_file_t* file, const uint8_t* bytes, size_t size);
+    bool append(lfs_file_t* file, const uint8_t* bytes, uint32_t size);
 };
 } // namespace Common
 
